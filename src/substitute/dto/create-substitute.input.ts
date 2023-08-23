@@ -1,6 +1,6 @@
 import { InputType, Int, Field } from '@nestjs/graphql';
 import { IsNotEmpty, IsNumber } from 'class-validator';
-import { IsFourCharactersWithNumbers } from 'src/utils/Validator';
+import { IsFourCharactersWithNumbers } from '../../utils/Validator';
 
 @InputType()
 export class CreateSubstituteInput {

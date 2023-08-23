@@ -1,7 +1,7 @@
 import { InputType, Int, Field } from '@nestjs/graphql';
 import { Gender } from '../entities/candidate.entity';
 import { IsEnum, IsInt, IsNotEmpty } from 'class-validator';
-import { IsFourCharactersWithNumbers } from 'src/utils/Validator';
+import { IsFourCharactersWithNumbers } from '../../utils/Validator';
 
 @InputType()
 export class createByRolesInput {

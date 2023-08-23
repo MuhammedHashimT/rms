@@ -2,7 +2,7 @@ import { InputType, Int, Field, Float } from '@nestjs/graphql'
 import { Type } from 'class-transformer'
 import { IsNotEmpty, Max, Min, ValidateNested , } from 'class-validator'
 import { arrayInput } from './array-input.dto'
-import { IsFourCharactersWithNumbers } from 'src/utils/Validator'
+import { IsFourCharactersWithNumbers } from '../../utils/Validator'
 
 @InputType()
 export class AddResult {
