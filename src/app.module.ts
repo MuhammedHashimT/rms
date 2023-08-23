@@ -83,19 +83,19 @@ import { TagModule } from './tag/tag.module';
 
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      autoSchemaFile: '/tmp/schema.gql',
       context: ({ req , res }) => ({ req, res }),
       playground:{
         settings: {
           'request.credentials': 'include',
         },
-        
       },
-      cors: {
+      cache: 'bounded',
+      introspection:true ,
+    cors: {
         origin: true,
         credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+
       },
     }),
 
