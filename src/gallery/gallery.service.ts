@@ -4,7 +4,7 @@ import { UpdateGalleryDto } from './dto/update-gallery.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Gallery } from './entities/gallery.entity';
 import { Repository } from 'typeorm';
-import { driveConfig } from 'src/utils/googleApi.auth';
+import { driveConfig } from '../utils/googleApi.auth';
 import { Readable } from 'typeorm/platform/PlatformTools';
 import { TagService } from 'src/tag/tag.service';
 
