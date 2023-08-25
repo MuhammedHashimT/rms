@@ -43,6 +43,25 @@ export class CandidatesResolver {
     return this.candidatesService.findAll( fields);
   }
 
+  @Query(() => [Candidate], { name: 'candidatesByCategory' })
+  findAllByCategory(
+    @Args('categoriesName', { type: () => [String] }) categoriesName: string[],
+    @Info() info: any
+  ) {
+    const fields = Object.keys(fieldsProjection(info));
+    return this.candidatesService.findByCategories(categoriesName , fields);
+  }
+
+  @Query(() => [Candidate], { name: 'candidatesByCategoriesAndTeam' })
+  findAllByCategoriesAndTeam(
+    @Args('categoriesName', { type: () => [String] }) categoriesName: string[],
+    @Args('teamName', { type: () => String }) teamName: string,
+    @Info() info: any
+  ) {
+    const fields = Object.keys(fieldsProjection(info));
+    return this.candidatesService.findByCategoryNamesAndTeamName(categoriesName, teamName , fields);
+  }
+
   @Query(() => Candidate, { name: 'candidate' })
   findOne(@Args('id', { type: () => Int }) id: number , @Info() info: any) {
     const fields = Object.keys(fieldsProjection(info));
