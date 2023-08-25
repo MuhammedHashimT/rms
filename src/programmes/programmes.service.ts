@@ -414,23 +414,47 @@ export class ProgrammesService {
     }
   }
 
-  findByCategories(categories: string[]) {
+ async findByCategories(categories: string[] , fields: string[]) {
+    const allowedRelations = [
+      'category',
+      'skill',
+    ];
+    
+    // validating fields
+    fields = fieldsValidator(fields, allowedRelations);
+    // checking if fields contains id
+    fields = fieldsIdChecker(fields);
+
     try {
-      return this.programmeRepository.find({
-        where: {
-          category: In(categories),
-        },
-        relations: ['category', 'skill', 'candidateProgramme'],
-      });
-    } catch (e) {
-      throw new HttpException(
-        'An Error have when finding programme ',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        { cause: e },
-      );
-    }
+      const queryBuilder = this.programmeRepository
+        .createQueryBuilder('programme')
+        .leftJoinAndSelect('programme.category', 'category')
+        .where('category.name IN (:...categories)', { categories })
+        .leftJoinAndSelect('programme.skill', 'skill')
+
+        queryBuilder.select(
+          fields.map(column => {
+            const splitted = column.split('.');
+  
+            if (splitted.length > 1) {
+              return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
+            } else {
+              return `programme.${column}`;
+            }
+          }),
+        );
+        const programme = await queryBuilder.getMany();
+        return programme;
+      } catch (e) {
+        throw new HttpException(
+          'An Error have when finding programme ',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          { cause: e },
+        );
+      }
   }
 
+ 
   async update(id: number, updateProgrammeInput: UpdateProgrammeInput, user: Credential) {
 
         // checking is programme exist
