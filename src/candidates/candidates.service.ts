@@ -14,11 +14,12 @@ import { CandidateProgrammeService } from 'src/candidate-programme/candidate-pro
 import { Team } from 'src/teams/entities/team.entity';
 import { CreateInput } from './dto/create-input.dto';
 import { CredentialsService } from 'src/credentials/credentials.service';
-import { fieldsIdChecker, fieldsValidator } from '../utils/util';
+import { fieldsIdChecker, fieldsValidator } from 'src/utils/util';
 import { createReadStream } from 'fs';
 import { join } from 'path';
 import { Readable } from 'stream';
-import { driveConfig } from '../utils/googleApi.auth';
+import { driveConfig } from 'src/utils/googleApi.auth';
+// import { drive } from 'src/utils/googleApi.auth';
 
 @Injectable()
 export class CandidatesService {
@@ -230,6 +231,7 @@ export class CandidatesService {
       'team',
       'candidateProgrammes',
       'candidateProgrammes.programme',
+
     ];
 
     // validating fields
@@ -267,27 +269,83 @@ export class CandidatesService {
     }
   }
 
-  findByCategories(categories: string[]) {
-    try {
-      const candidates = this.candidateRepository.find({
-        where: {
-          category: In(categories),
-        },
-        relations: ['category', 'team', 'candidateProgrammes'],
-      });
+ async findByCategories(categories: string[] , fields: string[]) {
+    const allowedRelations = ['category', 'team'];
+    
+    // validating fields
+    fields = fieldsValidator(fields, allowedRelations);
+    // checking if fields contains id
+    fields = fieldsIdChecker(fields);
 
-      if (!candidates) {
+    try {
+      const queryBuilder = this.candidateRepository
+        .createQueryBuilder('candidate')
+        .leftJoinAndSelect('candidate.category', 'category')
+        .where('category.name IN (:...categories)', { categories })
+        .leftJoinAndSelect('candidate.team', 'team');
+
+        queryBuilder.select(
+          fields.map(column => {
+            const splitted = column.split('.');
+  
+            if (splitted.length > 1) {
+              return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
+            } else {
+              return `candidate.${column}`;
+            }
+          }),
+        );
+        const candidate = await queryBuilder.getMany();
+        return candidate;
+      } catch (e) {
         throw new HttpException(
-          `Cant find candidates with categories ${categories} `,
-          HttpStatus.BAD_REQUEST,
+          'An Error have when finding candidate ',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+          { cause: e },
         );
       }
-
-      return candidates;
-    } catch (e) {
-      throw new HttpException(e.message, HttpStatus.INTERNAL_SERVER_ERROR, { cause: e });
-    }
   }
+
+  // find candidates by category name and team name
+
+  async findByCategoryNamesAndTeamName(categories: string[], teamName: string , fields: string[]) {
+    
+    const allowedRelations = ['category', 'team'];
+    
+    // validating fields
+    fields = fieldsValidator(fields, allowedRelations);
+    // checking if fields contains id
+    fields = fieldsIdChecker(fields);
+    try{
+    const queryBuilder = this.candidateRepository
+    .createQueryBuilder('candidate')
+    .where('candidate.category.name IN (:...categories)', { categories })
+    .andWhere('candidate.team.name = :teamName', { teamName })
+    .leftJoinAndSelect('candidate.category', 'category')
+    .leftJoinAndSelect('candidate.team', 'team')
+
+    queryBuilder.select(
+      fields.map(column => {
+        const splitted = column.split('.');
+
+        if (splitted.length > 1) {
+          return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
+        } else {
+          return `candidate.${column}`;
+        }
+      }),
+    );
+    const candidate = await queryBuilder.getMany();
+    return candidate;
+  } catch (e) {
+    throw new HttpException(
+      'An Error have when finding candidate ',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+      { cause: e },
+    );
+  }
+}
+  
 
   async findOne(id: number, fields: string[]) {
     const allowedRelations = [
@@ -295,6 +353,8 @@ export class CandidatesService {
       'team',
       'candidateProgrammes',
       'candidateProgrammes.programme',
+      'candidateProgrammes.position',
+      'candidateProgrammes.grade',
     ];
 
     // validating fields
@@ -308,7 +368,9 @@ export class CandidatesService {
         .leftJoinAndSelect('candidate.category', 'category')
         .leftJoinAndSelect('candidate.team', 'team')
         .leftJoinAndSelect('candidate.candidateProgrammes', 'candidateProgrammes')
-        .leftJoinAndSelect('candidateProgrammes.programme', 'programme');
+        .leftJoinAndSelect('candidateProgrammes.programme', 'programme')
+        .leftJoinAndSelect('candidateProgrammes.position', 'position')
+        .leftJoinAndSelect('candidateProgrammes.grade', 'grade');
 
       queryBuilder.select(
         fields.map(column => {
