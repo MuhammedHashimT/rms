@@ -40,7 +40,7 @@ export class Candidate {
   name: string;
 
   @Column({ nullable: true })
-  @Field(() => Int, { nullable: true })
+  @Field({ nullable: true })
   class: string;
 
   @Column({ nullable: true })
