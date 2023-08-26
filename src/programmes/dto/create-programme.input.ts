@@ -23,6 +23,10 @@ registerEnumType(Type, {
   name: 'Type',
 });
 
+registerEnumType(Model, {
+  name: 'Model',
+});
+
 @InputType()
 export class CreateProgrammeInput {
 
@@ -43,7 +47,7 @@ export class CreateProgrammeInput {
   type: Type;
 
   @IsNotEmpty()
-  @Field()
+  @Field() 
   model: Model;
   
   @Field(()=> Int , {nullable:true})
