@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { CreateProgrammeInput } from './dto/create-programme.input';
 import { UpdateProgrammeInput } from './dto/update-programme.input';
-import { Mode, Programme, Type } from './entities/programme.entity';
+import { Mode, Model, Programme, Type } from './entities/programme.entity';
 import { CategoryService } from 'src/category/category.service';
 import { SkillService } from 'src/skill/skill.service';
 import { CreateSchedule } from './dto/create-schedule.dto';
@@ -42,6 +42,7 @@ export class ProgrammesService {
       candidateCount: number;
       groupCount: number;
       conceptNote: string;
+      model : Model;
     }[] = [];
 
     // Iterate the values and taking all the individuals
@@ -128,6 +129,7 @@ export class ProgrammesService {
         candidateCount: createProgrammeInput.candidateCount,
         groupCount: createProgrammeInput.groupCount,
         conceptNote: createProgrammeInput.conceptNote,
+        model : createProgrammeInput.model,
       });
     }
 
@@ -160,6 +162,7 @@ export class ProgrammesService {
         input.type = data.type;
         input.groupCount = data.groupCount;
         input.conceptNote = data.conceptNote;
+        input.model = data.model;
 
         let saveData = await this.programmeRepository.save(input);
 
@@ -248,7 +251,8 @@ export class ProgrammesService {
       input.venue = createProgrammeInput.venue || null;
       input.groupCount = createProgrammeInput.groupCount || null;
       input.conceptNote = createProgrammeInput.conceptNote;
-
+      input.model = createProgrammeInput.model;
+      
       return this.programmeRepository.save(input);
     } catch (e) {
       throw new HttpException(
@@ -523,6 +527,7 @@ export class ProgrammesService {
       programme.venue = updateProgrammeInput.venue || null;
       programme.groupCount = updateProgrammeInput.groupCount;
       programme.conceptNote = updateProgrammeInput.conceptNote;
+      programme.model = updateProgrammeInput.model;
 
       return this.programmeRepository.save(programme)
     } catch {
