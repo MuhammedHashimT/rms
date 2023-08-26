@@ -1,36 +1,83 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
-import { Gender } from '../entities/candidate.entity';
-import { IsEnum, IsInt, IsNotEmpty } from 'class-validator';
-import { IsFourCharactersWithNumbers } from '../../utils/Validator';
+import { InputType, Int, Field, registerEnumType, ObjectType } from '@nestjs/graphql';
+import { IsNotEmpty, IsNumber } from 'class-validator';
+import { Model } from '../entities/programme.entity';
+
+export enum Mode {
+  STAGE = 'STAGE',
+  NON_STAGE = 'NON_STAGE',
+  OUTDOOR_STAGE = 'OUTDOOR_STAGE'
+}
+
+export enum Type {
+  SINGLE = 'SINGLE',
+  GROUP = 'GROUP',
+  HOUSE = 'HOUSE'
+}
+
+
+registerEnumType(Mode, {
+  name: 'Mode',
+});
+
+registerEnumType(Type, {
+  name: 'Type',
+});
+
+registerEnumType(Model, {
+  name: 'Model',
+});
 
 @InputType()
-export class CreateCandidateInput {
+export class CreateProgrammeInput {
+
+  @IsNotEmpty()
+  @Field()
+  programCode: string;
+
   @IsNotEmpty()
   @Field()
   name: string;
 
-  @Field({ nullable: true })
-  class: string;
+  @IsNotEmpty()
+  @Field(()=> Mode)
+  mode: Mode;
 
-  @IsInt()
-  @Field({ nullable: true })
-  adno: number;
+  @IsNotEmpty()
+  @Field(()=> Type)
+  type: Type;
 
-  @Field({ nullable: true })
-  dob: string;
+  @IsNotEmpty()
+  @Field() 
+  model: Model;
+  
+  @Field(()=> Int , {nullable:true})
+  groupCount: number;
 
-  @IsFourCharactersWithNumbers({message:"chest number must be 4 characters and last 3 characters must be numbers"})
-  @Field({ nullable: true })
-  chestNO : string;
+  @IsNotEmpty()
+  @IsNumber()
+  @Field(()=> Int )
+  candidateCount: number;
 
+  @Field({nullable:true})                                                                                           
+  date: string;
 
-  @IsEnum(Gender)
-  @Field(() => Gender)
-  gender: Gender;
+  
+  @Field(()=> Int ,{nullable:true} )
+  venue: number;
 
-  @Field( { nullable: true })
-  team: string;
+  @IsNotEmpty()
+  @IsNumber()
+  @Field(()=> Int)
+  duration: number;
 
-  @Field({ nullable: true })
-  category: string;
+  @IsNotEmpty()
+  @Field()
+  conceptNote: string;
+                                             
+  @Field()
+  skill: string ;
+
+  @IsNotEmpty()
+  @Field()
+  category : string;
 }
