@@ -42,9 +42,7 @@ export class CandidatesService {
       category: Category;
       chestNO: string;
       class: string;
-      dob: string;
       name: string;
-      gender: Gender;
       team: Team;
     }[] = [];
 
@@ -109,9 +107,7 @@ export class CandidatesService {
         category: category_id,
         chestNO: createCandidateInput.chestNO,
         class: createCandidateInput.class,
-        dob: createCandidateInput.dob,
         name: createCandidateInput.name,
-        gender: createCandidateInput.gender,
         team: team_id,
       });
     }
@@ -139,8 +135,6 @@ export class CandidatesService {
         input.category = data.category;
         input.chestNO = data.chestNO;
         input.class = data.class;
-        input.dob = data.dob;
-        input.gender = data.gender;
         input.name = data.name;
         input.team = data.team;
 
@@ -210,8 +204,6 @@ export class CandidatesService {
       input.category = category_id;
       input.chestNO = createCandidateInput.chestNO;
       input.class = createCandidateInput.class;
-      input.dob = createCandidateInput.dob;
-      input.gender = createCandidateInput.gender;
       input.name = createCandidateInput.name;
       input.team = team_id;
 
@@ -529,8 +521,6 @@ export class CandidatesService {
       candidate.category = category_id;
       candidate.chestNO = updateCandidateInput.chestNO;
       candidate.class = updateCandidateInput.class;
-      candidate.dob = updateCandidateInput.dob;
-      candidate.gender = updateCandidateInput.gender;
       candidate.name = updateCandidateInput.name;
       candidate.team = team_id;
 
