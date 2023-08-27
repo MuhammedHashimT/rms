@@ -13,7 +13,10 @@ export class CandidatesController {
   // upload image
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File, @Body('chestNo') chestNo: number) {
+  async uploadFile(@UploadedFile() file: Express.Multer.File, @Body('chestNo') chestNo: string) {
+    console.log('chestNo', chestNo);
+    console.log('file', file);
+    
     return this.candidatesService.uploadFile(chestNo, file.buffer, file.originalname, file.mimetype);
   }
 
