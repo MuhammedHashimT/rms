@@ -4,7 +4,7 @@ import { In, Repository } from 'typeorm';
 import { CreateProgrammeInput } from './dto/create-programme.input';
 import { UpdateProgrammeInput } from './dto/update-programme.input';
 import { Mode, Model, Programme, Type } from './entities/programme.entity';
-import { CategoryService } from 'src/category/category.service';
+import { CategoryService } from 'src/category/category.service'; 
 import { SkillService } from 'src/skill/skill.service';
 import { CreateSchedule } from './dto/create-schedule.dto';
 import { Credential } from 'src/credentials/entities/credential.entity';
