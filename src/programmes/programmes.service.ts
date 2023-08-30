@@ -401,6 +401,35 @@ export class ProgrammesService {
     }
   }
 
+  async findOneByCodeWithouError(programCode: string) {
+    try {
+      const programme = await this.programmeRepository.findOne({
+        where: {
+          programCode,
+        },
+        relations: [
+          'category',
+          'skill',
+          'candidateProgramme',
+          'category.settings',
+          'candidateProgramme.candidate',
+          'candidateProgramme.candidate.team',
+          'candidateProgramme.candidatesOfGroup',
+          'candidateProgramme.grade',
+          'candidateProgramme.position',
+        ],
+      });
+
+      if(!programme){
+        return null;
+      }
+
+      return programme;
+    } catch (e) {
+      return null;
+    }
+  }
+
   // find the programme by programme code know is the programme is there
 
   async findOneByCodeForCheck(programCode: string) {

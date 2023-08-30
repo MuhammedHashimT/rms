@@ -47,7 +47,7 @@ export class CreateProgrammeInput {
   type: Type;
 
   @IsNotEmpty()
-  @Field() 
+  @Field(()=> Model) 
   model: Model;
   
   @Field(()=> Int , {nullable:true})
