@@ -42,7 +42,7 @@ export class CandidateProgrammeService {
     private readonly customSettingsService: CustomSettingsService,
   ) {}
 
-  // same team candidates
+  // to get same team candidates
   teamCandidates(candidateProgrammes: CandidateProgramme[], team: Team) {
     return candidateProgrammes.filter((e: CandidateProgramme) => {
       return e.candidate?.team?.name == team.name;
@@ -65,7 +65,7 @@ export class CandidateProgrammeService {
 
     //  programme
     const programme: Programme = await this.programmeService.findOneByCode(programme_code);
- 
+
     if (!programme) {
       throw new HttpException(
         `Can't find programme with programme id ${programme_code}`,
@@ -81,7 +81,7 @@ export class CandidateProgrammeService {
     // checking the teamManager can add candidate to this programme
     if (user.roles === Roles.TeamManager) {
       // check permission on team
-     await this.credentialService.checkPermissionOnTeam(user, candidate.team.name);
+      await this.credentialService.checkPermissionOnTeam(user, candidate.team.name);
 
       const HaveAccess = (
         await this.categorySettingsService.findOne(category.settings.id, [
@@ -91,7 +91,6 @@ export class CandidateProgrammeService {
       ).isProgrammeListUpdatable;
 
       console.log(HaveAccess);
-      
 
       if (!HaveAccess) {
         throw new HttpException(
@@ -170,6 +169,190 @@ export class CandidateProgrammeService {
         e,
       );
     }
+  }
+
+  // create many candidate programme
+  async createMany(
+    createCandidateProgrammeInput: CreateCandidateProgrammeInput[],
+    user: Credential,
+  ) {
+    // check all inputs are valid
+    const checkedInputs: CreateCandidateProgrammeInput[] = [];
+    const errors: string[] = [];
+    const uploadedData: CandidateProgramme[] = [];
+
+    for (let i = 0; i < createCandidateProgrammeInput.length; i++) {
+      const cp = createCandidateProgrammeInput[i];
+      const { chestNo, programme_code } = cp;
+
+      //  candidate
+      const candidate: Candidate = await this.candidateService.findOneByChestNoWithoutError(chestNo);
+      const checkedCandidatesOfGroup: Candidate[] = [];
+
+      if (!candidate) {
+        errors.push(`Can't find candidate with chest number ${chestNo}`);
+        continue;
+      }
+
+      //  programme
+      const programme: Programme = await this.programmeService.findOneByCodeWithouError(programme_code);
+
+      if (!programme) {
+        errors.push(`Can't find programme with programme id ${programme_code}`);
+        continue;
+      }
+
+      const category = programme.category;
+
+      // check permission on category
+      const IsPermittednCategories =
+        await this.credentialService.checkPermissionOnCategoriesWithouError(user, category.name);
+
+      if (!IsPermittednCategories) {
+        errors.push(`You don't have permission on category ${category.name}`);
+        continue;
+      }
+
+      // checking the teamManager can add candidate to this programme
+      if (user.roles === Roles.TeamManager) {
+        // check permission on team
+        const IsPermittedOnTeam = await this.credentialService.checkPermissionOnTeamWithouError(
+          user,
+          candidate.team.name,
+        );
+
+        if (!IsPermittedOnTeam) {
+          errors.push(`You don't have permission on team ${candidate.team.name}`);
+          continue;
+        }
+
+        const HaveAccess = (
+          await this.categorySettingsService.findOne(category.settings.id, [
+            'id',
+            'isProgrammeListUpdatable',
+          ])
+        ).isProgrammeListUpdatable;
+
+        if (!HaveAccess) {
+          errors.push(`Your access is denied , please contact controller`);
+          continue;
+        }
+      }
+
+      if (programme.type !== Type.SINGLE) {
+        const candidatesOfGroup = cp.candidatesOfGroup;
+
+        if (!candidatesOfGroup) {
+          errors.push(`Can't find candidates of group on programme ${programme.programCode}`);
+          continue;
+        }
+
+        // checking the group is full
+        if (candidatesOfGroup.length !== programme.candidateCount) {
+          errors.push(
+            `Group size is not equal to ${programme.candidateCount} on programme ${programme.programCode}`,
+          );
+          continue;
+        }
+
+        // checking the candidate is there
+        for (let i = 0; i < candidatesOfGroup.length; i++) {
+          const candidate: Candidate = await this.candidateService.findOneByChestNo(
+            candidatesOfGroup[i],
+          );
+
+          if (!candidate) {
+            errors.push(
+              `Can't find candidate with chest number ${candidatesOfGroup[i]} on programme ${programme.programCode}`,
+            );
+            continue;
+          }
+
+          checkedCandidatesOfGroup.push(candidate);
+        }
+
+        // checking the leader is in the group
+        const isLeaderInGroup: boolean = candidatesOfGroup.includes(chestNo);
+
+        if (!isLeaderInGroup) {
+          errors.push(`Leader is not in the group on programme ${programme.programCode}`);
+          continue;
+        }
+
+        // checking the eligibility of the group
+        const isEligibleOnGroup: boolean = await this.checkEligibilityOnGroupWithoutError(
+          checkedCandidatesOfGroup,
+          programme,
+        );
+
+        if (!isEligibleOnGroup) {
+          errors.push(`The group is not eligible on programme ${programme.programCode}`);
+          continue;
+        }
+
+        // checking the availability on the team
+        const isEligibleOnTeam: boolean = await this.checkAvailabilityOnTeamWitoutError(
+          candidate,
+          programme,
+        );
+
+        if (!isEligibleOnTeam) {
+          errors.push(`The candidate is not eligible on programme ${programme.programCode}`);
+          continue;
+        }
+
+        // if all are valid push to checkedInputs
+        checkedInputs.push(cp);
+
+        const newCandidateProgrammeInput = this.candidateProgrammeRepository.create({
+          programme,
+          candidate,
+          candidatesOfGroup: checkedCandidatesOfGroup,
+        });
+
+        //  return newCandidateProgrammeInput
+        const data = await this.candidateProgrammeRepository.save(newCandidateProgrammeInput);
+
+        uploadedData.push(data);
+      } else {
+        // checking the candidate is eligible to this programme
+
+        const isEligibleForProgramme = await this.checkEligibilityWithoutError(
+          candidate,
+          programme,
+        );
+
+        if (!isEligibleForProgramme) {
+          errors.push(`The candidate is not eligible on programme ${programme.programCode}`);
+          continue;
+        }
+
+        // checking The candidate have available access on the team
+
+        const isAvailable = await this.checkAvailabilityOnTeamWitoutError(candidate, programme);
+
+        if (!isAvailable) {
+          errors.push(`The candidate is not eligible on programme ${programme.programCode}`);
+          continue;
+        }
+
+        // if all are valid push to checkedInputs
+        checkedInputs.push(cp);
+
+        const newCandidateProgrammeInput = this.candidateProgrammeRepository.create({
+          programme,
+          candidate,
+          candidatesOfGroup: checkedCandidatesOfGroup,
+        });
+
+        //  return newCandidateProgrammeInput
+        const data = await this.candidateProgrammeRepository.save(newCandidateProgrammeInput);
+
+        uploadedData.push(data);
+      }
+    }
+
+    return { result: uploadedData, errors };
   }
 
   async findAll(fields: string[]) {
@@ -276,11 +459,8 @@ export class CandidateProgrammeService {
 
     // cant change the programme
 
-    if(updateCandidateProgrammeInput.programme_code !== candidateProgramme.programme.programCode) {
-      throw new HttpException(
-        `Can't change the programme`,
-        HttpStatus.BAD_REQUEST,
-      );
+    if (updateCandidateProgrammeInput.programme_code !== candidateProgramme.programme.programCode) {
+      throw new HttpException(`Can't change the programme`, HttpStatus.BAD_REQUEST);
     }
 
     //  candidate
@@ -548,34 +728,34 @@ export class CandidateProgrammeService {
     const candidateGroupProgrammes: CandidateProgramme[] =
       await this.getCandidatesOfGroupOfCandidate(candidate.chestNO);
 
-      // check on custom settings
+    // check on custom settings
 
-      const customSetting = await this.customSettingsService.findByProgramCode(programme.programCode);
+    const customSetting = await this.customSettingsService.findByProgramCode(programme.programCode);
 
-      if(customSetting){
-        const customSettingId : CustomSetting = await this.customSettingsService.findOne(customSetting.id , ['max' , 'programmes.programCode' ,'programmes.id' ,'name']);
+    if (customSetting) {
+      const customSettingId: CustomSetting = await this.customSettingsService.findOne(
+        customSetting.id,
+        ['max', 'programmes.programCode', 'programmes.id', 'name'],
+      );
 
-        if(customSettingId){
+      if (customSettingId) {
+        const { max, programmes, name } = customSettingId;
+        const customProgramsOnCandidate = candidate.candidateProgrammes.filter(cp => {
+          for (let i = 0; i < programmes.length; i++) {
+            if (cp.programme.id == programmes[i].id) {
+              return true;
+            }
+          }
+        });
 
-         const {max , programmes , name } = customSettingId;
-         const customProgramsOnCandidate = candidate.candidateProgrammes.filter((cp)=>{
-           for(let i = 0 ; i < programmes.length ; i++){
-             if(cp.programme.id == programmes[i].id){
-               return true;
-             }
-           }
-         })
-
-         if(customProgramsOnCandidate.length >= max){
+        if (customProgramsOnCandidate.length >= max) {
           throw new HttpException(
             `The candidate ${candidate.name} can't participate in programme  ${programme.name}, maximum programmes on ${name} is ${max}`,
             HttpStatus.BAD_REQUEST,
           );
         }
-        }
-  
-  
       }
+    }
 
     //  settings
     const settings: CategorySettings = category.settings;
@@ -680,7 +860,7 @@ export class CandidateProgrammeService {
           );
         }
       }
-    } else if (programme.type !== Type.HOUSE && programme.model == Model.Sports){
+    } else if (programme.type !== Type.HOUSE && programme.model == Model.Sports) {
       // maximum sports programme
       if (settings.maxSports && (programme.type == Type.SINGLE || programme.type == Type.GROUP)) {
         const programmes: CandidateProgramme[] = candidate.candidateProgrammes;
@@ -724,8 +904,219 @@ export class CandidateProgrammeService {
           );
         }
       }
-
     }
+  }
+
+  async checkEligibilityWithoutError(candidate: Candidate, programme: Programme) {
+    const Query = this.candidateProgrammeRepository
+      .createQueryBuilder('c')
+      .leftJoinAndSelect('c.candidate', 'candidate')
+      .leftJoinAndSelect('c.programme', 'programme')
+      .leftJoinAndSelect('c.candidatesOfGroup', 'candidatesOfGroup')
+      .leftJoinAndSelect('candidate.category', 'category')
+      .leftJoinAndSelect('candidate.team', 'team')
+      .leftJoinAndSelect('programme.category', 'programmeCategory')
+      .leftJoinAndSelect('programme.skill', 'skill')
+      .leftJoinAndSelect('category.settings', 'settings')
+      .leftJoinAndSelect('candidate.candidateProgrammes', 'cp');
+
+    // checking the candidate is already in the programme
+
+    if (programme.type == Type.SINGLE) {
+      // finding on his programmes
+      const isAlreadyDone = await Query.where('programme.id = :id', { id: programme.id })
+        .andWhere('candidate.id = :candidateId', { candidateId: candidate.id })
+        .getCount();
+
+      if (isAlreadyDone > 0) {
+        return false;
+      }
+    } else {
+      const isAlreadyDoneInGroup: number = await Query.where('programme.id = :id', {
+        id: programme.id,
+      })
+        .andWhere('candidatesOfGroup.id = :candidateId', { candidateId: candidate.id })
+        .getCount();
+
+      if (isAlreadyDoneInGroup > 0) {
+        return false;
+      }
+    }
+
+    // CHECKING THE PROGRAMME IS ACCESSIBLE FOR CANDIDATE
+
+    // checking the category
+
+    if (programme.type != Type.HOUSE) {
+      const isSameCategory: boolean = candidate.category?.name == programme.category?.name;
+
+      if (!isSameCategory) {
+        return false;
+      }
+    }
+
+    //  CHECKING THE ALL RULES FROM CATEGORY SETTINGS ARE REGULATED
+
+    //  category
+    const category_name: string = candidate.category?.name;
+    const category: Category = await this.categoryService.findOneByName(category_name);
+
+    // candidate group programmes     // CHECK HERE :)
+    const candidateGroupProgrammes: CandidateProgramme[] =
+      await this.getCandidatesOfGroupOfCandidate(candidate.chestNO);
+
+    // check on custom settings
+
+    const customSetting = await this.customSettingsService.findByProgramCode(programme.programCode);
+
+    if (customSetting) {
+      const customSettingId: CustomSetting = await this.customSettingsService.findOne(
+        customSetting.id,
+        ['max', 'programmes.programCode', 'programmes.id', 'name'],
+      );
+
+      if (customSettingId) {
+        const { max, programmes, name } = customSettingId;
+        const customProgramsOnCandidate = candidate.candidateProgrammes.filter(cp => {
+          for (let i = 0; i < programmes.length; i++) {
+            if (cp.programme.id == programmes[i].id) {
+              return true;
+            }
+          }
+        });
+
+        if (customProgramsOnCandidate.length >= max) {
+          return false;
+        }
+      }
+    }
+
+    //  settings
+    const settings: CategorySettings = category.settings;
+
+    if (!settings) {
+      return false;
+    }
+
+    // checking is it covered maximum programme limit
+    if (programme.type !== Type.HOUSE && programme.model !== Model.Sports) {
+      if (settings.maxProgram && (programme.type == Type.SINGLE || programme.type == Type.GROUP)) {
+        const programmes: CandidateProgramme[] = candidate.candidateProgrammes;
+
+        if (programmes.length >= settings.maxProgram) {
+          return false;
+        }
+      }
+
+      // checking is it covered maximum single programme limit
+
+      if (settings.maxSingle && programme.type == Type.SINGLE) {
+        const SinglePrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
+          (e: CandidateProgramme) => {
+            return e.programme.type == Type.SINGLE;
+          },
+        );
+        if (SinglePrograms.length >= settings.maxSingle) {
+          return false;
+        }
+      }
+
+      // checking is it covered maximum group programme limit
+
+      if (settings.maxGroup && programme.type == Type.GROUP) {
+        const groupPrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
+          (e: CandidateProgramme) => {
+            return e.programme.type == Type.GROUP;
+          },
+        );
+        if (groupPrograms.length >= settings.maxGroup) {
+          return false;
+        }
+      }
+
+      // checking is it covered maximum stage programme
+
+      if (settings.maxStage && programme.mode == Mode.STAGE && programme.type == Type.SINGLE) {
+        const stagePrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
+          (e: CandidateProgramme) => {
+            return e.programme.mode == Mode.STAGE && e.programme.type == Type.SINGLE;
+          },
+        );
+        if (stagePrograms.length >= settings.maxStage) {
+          return false;
+        }
+      }
+
+      // checking is it covered maximum non stage programme
+
+      if (
+        settings.maxNonStage &&
+        programme.mode == Mode.NON_STAGE &&
+        programme.type == Type.SINGLE
+      ) {
+        const nonStagePrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
+          (e: CandidateProgramme) => {
+            return e.programme.mode == Mode.NON_STAGE && e.programme.type == Type.SINGLE;
+          },
+        );
+        if (nonStagePrograms.length >= settings.maxNonStage) {
+          return false;
+        }
+      }
+
+      // checking is it covered maximum outdoor stage programme
+
+      if (
+        settings.maxOutDoor &&
+        programme.mode == Mode.OUTDOOR_STAGE &&
+        programme.type == Type.SINGLE
+      ) {
+        const outDoorPrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
+          (e: CandidateProgramme) => {
+            return e.programme.mode == Mode.OUTDOOR_STAGE && e.programme.type == Type.SINGLE;
+          },
+        );
+        if (outDoorPrograms.length >= settings.maxOutDoor) {
+          return false;
+        }
+      }
+    } else if (programme.type !== Type.HOUSE && programme.model == Model.Sports) {
+      // maximum sports programme
+      if (settings.maxSports && (programme.type == Type.SINGLE || programme.type == Type.GROUP)) {
+        const programmes: CandidateProgramme[] = candidate.candidateProgrammes;
+
+        if (programmes.length >= settings.maxSports) {
+          return false;
+        }
+      }
+
+      // maximum sports single programme
+
+      if (settings.maxSportsSingle && programme.type == Type.SINGLE) {
+        const SinglePrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
+          (e: CandidateProgramme) => {
+            return e.programme.type == Type.SINGLE;
+          },
+        );
+        if (SinglePrograms.length >= settings.maxSportsSingle) {
+          return false;
+        }
+      }
+
+      // maximum sports group programme
+
+      if (settings.maxSportsGroup && programme.type == Type.GROUP) {
+        const groupPrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
+          (e: CandidateProgramme) => {
+            return e.programme.type == Type.GROUP;
+          },
+        );
+        if (groupPrograms.length >= settings.maxSportsGroup) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   async checkEligibilityOnGroup(candidatesOfGroup: Candidate[], programme: Programme) {
@@ -746,6 +1137,32 @@ export class CandidateProgrammeService {
     if (!isSameTeam) {
       throw new HttpException(`All candidates must be in same team`, HttpStatus.BAD_REQUEST);
     }
+  }
+
+  async checkEligibilityOnGroupWithoutError(candidatesOfGroup: Candidate[], programme: Programme) {
+    // checking each candidate on the group
+
+    for (let i = 0; i < candidatesOfGroup.length; i++) {
+      const candidate = candidatesOfGroup[i];
+      const isEligible = await this.checkEligibilityWithoutError(candidate, programme);
+
+      if (!isEligible) {
+        return false;
+      }
+    }
+
+    // checking all candidates are in same team
+    const teams: Team[] = candidatesOfGroup.map((e: Candidate) => {
+      return e.team;
+    });
+
+    const isSameTeam: boolean = teams.every((val, i, arr) => val.id === arr[0].id);
+
+    if (!isSameTeam) {
+      return false;
+    }
+
+    return true;
   }
 
   async checkAvailabilityOnTeam(candidate: Candidate, programme: Programme) {
@@ -779,6 +1196,35 @@ export class CandidateProgrammeService {
         );
       }
     }
+  }
+
+  async checkAvailabilityOnTeamWitoutError(candidate: Candidate, programme: Programme) {
+    // CHECKING THE LIMIT OF CANDIDATES IN A TEAM COVERED
+
+    const team: Team = candidate.team;
+
+    //  candidates of the programme
+    const programmeCandidates: CandidateProgramme[] = programme.candidateProgramme;
+    // candidates on the team
+
+    const onTeamCandidates = this.teamCandidates(programmeCandidates, team);
+
+    // On single programmes
+    if (programme.type == Type.SINGLE) {
+      if (onTeamCandidates.length >= programme.candidateCount) {
+        return false;
+      }
+    }
+
+    // On Group or House programmes
+    if (programme.type !== Type.SINGLE) {
+      // checking The candidates on each group is exceed the limit or not
+      if (onTeamCandidates.length >= programme.groupCount) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   async getCandidatesOfGroupOfCandidate(chessNo: string) {
@@ -821,6 +1267,4 @@ export class CandidateProgrammeService {
 
     return candidatesOfGroups;
   }
-
-
 }
