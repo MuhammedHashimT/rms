@@ -4,10 +4,12 @@ import { CustomSetting } from './entities/custom-setting.entity';
 import { CreateCustomSettingInput } from './dto/create-custom-setting.input';
 import { fieldsProjection } from 'graphql-fields-list';
 import { UpdateCustomSettingInput } from './dto/update-custom-setting.input';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => CustomSetting)
 export class CustomSettingsResolver {
-  constructor(private readonly customSettingsService: CustomSettingsService) {}
+  constructor(private readonly customSettingsService: CustomSettingsService,
+    private readonly credentialsService: CredentialsService,) {}
 
   @Mutation(() => CustomSetting)
   createCustomSetting(@Args('createCustomSettingInput') createCustomSettingInput: CreateCustomSettingInput) {
@@ -15,15 +17,18 @@ export class CustomSettingsResolver {
   }
 
   @Query(() => [CustomSetting], { name: 'customSettings' })
-  findAll(
+  async findAll(
   @Info() info: any, 
+  @Args('api_key') api_key: string,
   ) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.customSettingsService.findAll( fields);
   }
 
   @Query(() => CustomSetting, { name: 'customSetting' })
-  findOne(@Args('id', { type: () => Int }) id: number , @Info() info: any) {
+  async findOne(@Args('id', { type: () => Int }) id: number , @Args('api_key') api_key: string, @Info() info: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.customSettingsService.findOne(id , fields);
   }

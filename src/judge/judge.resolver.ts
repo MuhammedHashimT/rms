@@ -8,10 +8,12 @@ import { Roles } from 'src/credentials/roles/roles.enum';
 import { UseGuards } from '@nestjs/common';
 import { arrayInput } from 'src/candidate-programme/dto/array-input.dto';
 import { fieldsProjection } from 'graphql-fields-list';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Judge)
 export class JudgeResolver {
-  constructor(private readonly judgeService: JudgeService) {}
+  constructor(private readonly judgeService: JudgeService,
+    private readonly credentialsService: CredentialsService,) {}
 
   @Mutation(() => Judge)
   @HasRoles(Roles.Controller)
@@ -24,13 +26,15 @@ export class JudgeResolver {
   }
 
   @Query(() => [Judge], { name: 'judges' })
-  findAll(@Info() info: any) {
+  async findAll(@Info() info: any, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.judgeService.findAll(fields);
   }
 
   @Query(() => Judge, { name: 'judge' })
-  findOne(@Args('id', { type: () => Int }) id: number, @Info() info: any) {
+  async findOne(@Args('id', { type: () => Int }) id: number, @Args('api_key') api_key: string, @Info() info: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.judgeService.findOne(id, fields);
   }

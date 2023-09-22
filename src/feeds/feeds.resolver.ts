@@ -3,10 +3,12 @@ import { FeedsService } from './feeds.service';
 import { Feed } from './entities/feed.entity';
 import { CreateFeedInput } from './dto/create-feed.input';
 import { UpdateFeedInput } from './dto/update-feed.input';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Feed)
 export class FeedsResolver {
-  constructor(private readonly feedsService: FeedsService) {}
+  constructor(private readonly feedsService: FeedsService,
+    private readonly credentialsService: CredentialsService,) {}
 
   @Mutation(() => Feed)
   createFeed(@Args('createFeedInput') createFeedInput: CreateFeedInput) {
@@ -14,12 +16,14 @@ export class FeedsResolver {
   }
 
   @Query(() => [Feed], { name: 'feeds' })
-  findAll() {
+  async findAll(@Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     return this.feedsService.findAll();
   }
 
   @Query(() => Feed, { name: 'feed' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  async findOne(@Args('id', { type: () => Int }) id: number, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     return this.feedsService.findOne(id);
   }
 

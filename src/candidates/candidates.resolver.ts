@@ -8,10 +8,12 @@ import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { CreateInput } from './dto/create-input.dto';
 import { fieldsProjection } from 'graphql-fields-list';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Candidate)
 export class CandidatesResolver {
-  constructor(private readonly candidatesService: CandidatesService) {}
+  constructor(private readonly candidatesService: CandidatesService,
+    private readonly credentialsService: CredentialsService) {}
 
   // @UsePipes(CandidatePipe)
   @Mutation(() => Candidate)
@@ -36,34 +38,18 @@ export class CandidatesResolver {
   }
 
   @Query(() => [Candidate], { name: 'candidates' })
-  findAll(
+  async findAll(
     @Info() info: any,
+    @Args('api_key') api_key: string,
   ) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.candidatesService.findAll( fields);
   }
 
-  @Query(() => [Candidate], { name: 'candidatesByCategory' })
-  findAllByCategory(
-    @Args('categoriesName', { type: () => [String] }) categoriesName: string[],
-    @Info() info: any
-  ) {
-    const fields = Object.keys(fieldsProjection(info));
-    return this.candidatesService.findByCategories(categoriesName , fields);
-  }
-
-  @Query(() => [Candidate], { name: 'candidatesByCategoriesAndTeam' })
-  findAllByCategoriesAndTeam(
-    @Args('categoriesName', { type: () => [String] }) categoriesName: string[],
-    @Args('teamName', { type: () => String }) teamName: string,
-    @Info() info: any
-  ) {
-    const fields = Object.keys(fieldsProjection(info));
-    return this.candidatesService.findByCategoryNamesAndTeamName(categoriesName, teamName , fields);
-  }
-
   @Query(() => Candidate, { name: 'candidate' })
-  findOne(@Args('id', { type: () => Int }) id: number , @Info() info: any) {
+  async findOne(@Args('id', { type: () => Int }) id: number , @Args('api_key') api_key: string, @Info() info: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.candidatesService.findOne(id , fields);
   }

@@ -8,10 +8,12 @@ import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { UseGuards } from '@nestjs/common';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { fieldsProjection } from 'graphql-fields-list';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => CategorySettingsModule)
 export class CategorySettingsResolver {
-  constructor(private readonly categorySettingsService: CategorySettingsService) {}
+  constructor(private readonly categorySettingsService: CategorySettingsService,
+    private readonly credentialsService: CredentialsService,) {}
 
   @HasRoles(Roles.Controller)
   @UseGuards(RolesGuard)
@@ -24,13 +26,15 @@ export class CategorySettingsResolver {
   }
 
   @Query(() => [CategorySettings], { name: 'categorySettings' })
-  findAll(@Info() info: any) {
+  async findAll(@Info() info: any, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.categorySettingsService.findAll(fields);
   }
 
   @Query(() => CategorySettings, { name: 'categorySetting' })
-  findOne(@Args('id', { type: () => Int }) id: number, @Info() info: any) {
+  async findOne(@Args('id', { type: () => Int }) id: number, @Args('api_key') api_key: string, @Info() info: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.categorySettingsService.findOne(id, fields);
   }

@@ -40,11 +40,11 @@ export class Candidate {
   name: string;
 
   @Column({ nullable: true })
-  @Field({ nullable: true })
+  @Field( { nullable: true })
   class: string;
 
   @Column({ nullable: true })
-  @Field({ nullable: true })
+  @Field(() => Int,{ nullable: true })
   adno: number;
 
   @Column({ nullable: true })
@@ -70,6 +70,14 @@ export class Candidate {
   @Column({ nullable: true })
   @Field({ nullable: true })
   groupPoint: number;
+
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  individualSportsPoint: number;
+
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  groupSportsPoint: number;
 
   // OneTOMany relations
 

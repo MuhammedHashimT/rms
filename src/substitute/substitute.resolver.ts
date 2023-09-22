@@ -7,13 +7,15 @@ import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { UseGuards } from '@nestjs/common';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { fieldsProjection } from 'graphql-fields-list';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Substitute)
 export class SubstituteResolver {
-  constructor(private readonly substituteService: SubstituteService) {}
+  constructor(private readonly substituteService: SubstituteService,
+    private readonly credentialsService: CredentialsService,) {}
 
   @Mutation(() => Substitute)
-  @HasRoles(Roles.TeamManager , Roles.Controller)
+  @HasRoles(Roles.TeamManager)
   @UseGuards(RolesGuard)
   createSubstitute(
     @Args('createSubstituteInput') createSubstituteInput: CreateSubstituteInput,
@@ -23,21 +25,24 @@ export class SubstituteResolver {
   }
 
   @Query(() => [Substitute], { name: 'substitutes' })
-  findAll(@Info() info: any) {
+  async findAll(@Info() info: any, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields  = Object.keys(fieldsProjection(info));
     return this.substituteService.findAll(fields);
   }
 
   @Query(() => Substitute, { name: 'substitute' })
-  findOne(@Args('id', { type: () => Int }) id: number ,
+  async findOne(@Args('id', { type: () => Int }) id: number ,
+  @Args('api_key') api_key: string,
   @Info() info: any,
   ) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields  = Object.keys(fieldsProjection(info));
     return this.substituteService.findOne(id , fields);
   }
 
   @Mutation(() => Substitute)
-  @HasRoles(Roles.TeamManager  , Roles.Controller)
+  @HasRoles(Roles.TeamManager)
   @UseGuards(RolesGuard)
   updateSubstitute(@Args('updateSubstituteInput') updateSubstituteInput: UpdateSubstituteInput ,
   @Context('req') req: any,
@@ -46,7 +51,7 @@ export class SubstituteResolver {
   }
 
   @Mutation(() => Substitute)
-  @HasRoles(Roles.TeamManager  , Roles.Controller)
+  @HasRoles(Roles.TeamManager)
   @UseGuards(RolesGuard)
   removeSubstitute(@Args('id', { type: () => Int }) id: number ,
   @Context('req') req: any,

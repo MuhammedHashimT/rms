@@ -8,10 +8,12 @@ import { CategoryPipe } from './pipe/category.pipe';
 import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { fieldsProjection } from 'graphql-fields-list';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Category)
 export class CategoryResolver {
-  constructor(private readonly categoryService: CategoryService) { }
+  constructor(private readonly categoryService: CategoryService,
+    private readonly credentialsService: CredentialsService) { }
 
   @UsePipes(CategoryPipe)
   @Mutation(() => Category)
@@ -22,15 +24,18 @@ export class CategoryResolver {
   }
 
   @Query(() => [Category], { name: 'categories' })
-  findAll(
+  async findAll(
     @Info() info: any,
+    @Args('api_key') api_key: string,
   ) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.categoryService.findAll(  fields);
   }
 
   @Query(() => Category, { name: 'category' })
-  findOne(@Args('id', { type: () => Int }) id: number , @Info() info: any) {
+  async findOne(@Args('id', { type: () => Int }) id: number , @Args('api_key') api_key: string, @Info() info: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.categoryService.findOne(id , fields);
   }
@@ -38,10 +43,11 @@ export class CategoryResolver {
   @HasRoles(Roles.Controller , Roles.TeamManager)
   @UseGuards(RolesGuard)
   @Query(() => [Category], { name: 'categoriesByNames' })
-  findByName( @Info() info: any , @Context('req') request: any) {
+  async findByName( @Info() info: any , @Args('api_key') api_key: string, @Context('req') request: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
-    const names = request.user.categories?.map((category : Category) => category.name);
-    const team = request.user.team?.name;
+    const names = request.user.categories.map((category : Category) => category.name);
+    const team = request.user.team.name;
     return this.categoryService.findManyByName(names , fields , team );
   }
 

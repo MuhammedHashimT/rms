@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { CreateProgrammeInput } from './dto/create-programme.input';
 import { UpdateProgrammeInput } from './dto/update-programme.input';
-import { Mode, Model, Programme, Type } from './entities/programme.entity';
+import { Mode, Programme, Type } from './entities/programme.entity';
 import { CategoryService } from 'src/category/category.service';
 import { SkillService } from 'src/skill/skill.service';
 import { CreateSchedule } from './dto/create-schedule.dto';
@@ -42,7 +42,6 @@ export class ProgrammesService {
       candidateCount: number;
       groupCount: number;
       conceptNote: string;
-      model : Model;
     }[] = [];
 
     // Iterate the values and taking all the individuals
@@ -129,7 +128,6 @@ export class ProgrammesService {
         candidateCount: createProgrammeInput.candidateCount,
         groupCount: createProgrammeInput.groupCount,
         conceptNote: createProgrammeInput.conceptNote,
-        model : createProgrammeInput.model,
       });
     }
 
@@ -162,7 +160,6 @@ export class ProgrammesService {
         input.type = data.type;
         input.groupCount = data.groupCount;
         input.conceptNote = data.conceptNote;
-        input.model = data.model;
 
         let saveData = await this.programmeRepository.save(input);
 
@@ -251,8 +248,7 @@ export class ProgrammesService {
       input.venue = createProgrammeInput.venue || null;
       input.groupCount = createProgrammeInput.groupCount || null;
       input.conceptNote = createProgrammeInput.conceptNote;
-      input.model = createProgrammeInput.model;
-      
+
       return this.programmeRepository.save(input);
     } catch (e) {
       throw new HttpException(
@@ -317,6 +313,123 @@ export class ProgrammesService {
       );
     }
   }
+
+  // find the result entered programmes
+
+  async findResultEnteredProgrammes(fields: string[]) {
+    const allowedRelations = [
+      'category',
+      'skill',
+      'candidateProgramme',
+      'candidateProgramme.candidate',
+      'candidateProgramme.candidate.team',
+      'category.settings',
+      'candidateProgramme.candidatesOfGroup',
+      'candidateProgramme.grade',
+      'candidateProgramme.position',
+    ];
+
+    // validating fields
+    fields = fieldsValidator(fields, allowedRelations);
+
+    // checking if fields contains id
+    fields = fieldsIdChecker(fields);
+
+    try {
+      const queryBuilder = this.programmeRepository
+        .createQueryBuilder('programme')
+        .where('programme.resultEntered = true')
+        .leftJoinAndSelect('programme.category', 'category')
+        .leftJoinAndSelect('programme.skill', 'skill')
+        .leftJoinAndSelect('programme.candidateProgramme', 'candidateProgramme')
+        .leftJoinAndSelect('candidateProgramme.candidate', 'candidate')
+        .leftJoinAndSelect('candidate.team', 'team')
+        .leftJoinAndSelect('category.settings', 'settings')
+        .leftJoinAndSelect('candidateProgramme.candidatesOfGroup', 'candidatesOfGroup')
+        .leftJoinAndSelect('candidateProgramme.grade', 'grade')
+        .leftJoinAndSelect('candidateProgramme.position', 'position');
+
+      queryBuilder.select(
+        fields.map(column => {
+          const splitted = column.split('.');
+
+          if (splitted.length > 1) {
+            return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
+          } else {
+            return `programme.${column}`;
+          }
+        }),
+      );
+      const programme = await queryBuilder.getMany();
+      return programme;
+    } catch (e) {
+      throw new HttpException(
+        'An Error have when finding programme ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: e },
+      );
+    }
+    
+  }
+
+  // result published programmes
+
+
+  async findResultPublishedProgrammes( fields: string[]){
+    const allowedRelations = [
+      'category',
+      'skill',
+      'candidateProgramme',
+      'candidateProgramme.candidate',
+      'candidateProgramme.candidate.team',
+      'category.settings',
+      'candidateProgramme.candidatesOfGroup',
+      'candidateProgramme.grade',
+      'candidateProgramme.position',
+    ];
+
+    // validating fields
+    fields = fieldsValidator(fields, allowedRelations);
+
+    // checking if fields contains id
+    fields = fieldsIdChecker(fields);
+
+    try {
+      const queryBuilder = this.programmeRepository
+        .createQueryBuilder('programme')
+        .where('programme.resultPublished = true')
+        .leftJoinAndSelect('programme.category', 'category')
+        .leftJoinAndSelect('programme.skill', 'skill')
+        .leftJoinAndSelect('programme.candidateProgramme', 'candidateProgramme')
+        .leftJoinAndSelect('candidateProgramme.candidate', 'candidate')
+        .leftJoinAndSelect('candidate.team', 'team')
+        .leftJoinAndSelect('category.settings', 'settings')
+        .leftJoinAndSelect('candidateProgramme.candidatesOfGroup', 'candidatesOfGroup')
+        .leftJoinAndSelect('candidateProgramme.grade', 'grade')
+        .leftJoinAndSelect('candidateProgramme.position', 'position');
+
+      queryBuilder.select(
+        fields.map(column => {
+          const splitted = column.split('.');
+
+          if (splitted.length > 1) {
+            return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
+          } else {
+            return `programme.${column}`;
+          }
+        }),
+      );
+      const programme = await queryBuilder.getMany();
+      return programme;
+    } catch (e) {
+      throw new HttpException(
+        'An Error have when finding programme ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: e },
+      );
+    }
+  }
+
 
   async findOne(id: number, fields: string[]) {
     const allowedRelations = [
@@ -401,35 +514,6 @@ export class ProgrammesService {
     }
   }
 
-  async findOneByCodeWithouError(programCode: string) {
-    try {
-      const programme = await this.programmeRepository.findOne({
-        where: {
-          programCode,
-        },
-        relations: [
-          'category',
-          'skill',
-          'candidateProgramme',
-          'category.settings',
-          'candidateProgramme.candidate',
-          'candidateProgramme.candidate.team',
-          'candidateProgramme.candidatesOfGroup',
-          'candidateProgramme.grade',
-          'candidateProgramme.position',
-        ],
-      });
-
-      if(!programme){
-        return null;
-      }
-
-      return programme;
-    } catch (e) {
-      return null;
-    }
-  }
-
   // find the programme by programme code know is the programme is there
 
   async findOneByCodeForCheck(programCode: string) {
@@ -447,57 +531,24 @@ export class ProgrammesService {
     }
   }
 
- async findByCategories(categories: string[] , fields: string[]) {
-    const allowedRelations = [
-      'category',
-      'skill',
-    ];
-    
-    // validating fields
-    fields = fieldsValidator(fields, allowedRelations);
-    // checking if fields contains id
-    fields = fieldsIdChecker(fields);
-
+  findByCategories(categories: string[]) {
     try {
-      const queryBuilder = this.programmeRepository
-        .createQueryBuilder('programme')
-        .leftJoinAndSelect('programme.category', 'category')
-        .where('category.name IN (:...categories)', { categories })
-        .leftJoinAndSelect('programme.skill', 'skill')
-
-        queryBuilder.select(
-          fields.map(column => {
-            const splitted = column.split('.');
-  
-            if (splitted.length > 1) {
-              return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
-            } else {
-              return `programme.${column}`;
-            }
-          }),
-        );
-        const programme = await queryBuilder.getMany();
-        return programme;
-      } catch (e) {
-        throw new HttpException(
-          'An Error have when finding programme ',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-          { cause: e },
-        );
-      }
+      return this.programmeRepository.find({
+        where: {
+          category: In(categories),
+        },
+        relations: ['category', 'skill', 'candidateProgramme'],
+      });
+    } catch (e) {
+      throw new HttpException(
+        'An Error have when finding programme ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: e },
+      );
+    }
   }
 
- 
   async update(id: number, updateProgrammeInput: UpdateProgrammeInput, user: Credential) {
-
-        // checking is programme exist
-
-        const programme = await this.programmeRepository.findOneBy({ id });
-
-        if (!programme) {
-          throw new HttpException(`Cant find a programme to update`, HttpStatus.BAD_REQUEST);
-        }
-
     //  checking is category exist
 
     const category_id = await this.categoryService.findOneByName(updateProgrammeInput.category);
@@ -513,11 +564,17 @@ export class ProgrammesService {
 
     this.CredentialService.checkPermissionOnCategories(user, category_id.name);
 
+    // checking is candidate exist
+
+    const programme = await this.programmeRepository.findOneBy({ id });
+
+    if (!programme) {
+      throw new HttpException(`Cant find a programme to update`, HttpStatus.BAD_REQUEST);
+    }
 
     //  checking is skill exist
 
-    const IS_SKILL_REQUIRED = (await this.detailsService.findIt()).isSkillHave
-    
+    const IS_SKILL_REQUIRED = (await this.detailsService.findIt()).isSkillHave;
 
     //  checking is skill exist
 
@@ -543,22 +600,22 @@ export class ProgrammesService {
 
     try {
       // creating a instance of Programme
+      const input = new Programme();
 
       // updating Value to Programme
-      programme.candidateCount = updateProgrammeInput.candidateCount;
-      programme.category = category_id;
-      programme.duration = updateProgrammeInput.duration;
-      programme.mode = updateProgrammeInput.mode;
-      programme.name = updateProgrammeInput.name;
-      programme.programCode = updateProgrammeInput.programCode;
-      programme.skill = skill_id;
-      programme.type = updateProgrammeInput.type;
-      programme.venue = updateProgrammeInput.venue || null;
-      programme.groupCount = updateProgrammeInput.groupCount;
-      programme.conceptNote = updateProgrammeInput.conceptNote;
-      programme.model = updateProgrammeInput.model;
+      input.candidateCount = updateProgrammeInput.candidateCount;
+      input.category = category_id;
+      input.duration = updateProgrammeInput.duration;
+      input.mode = updateProgrammeInput.mode;
+      input.name = updateProgrammeInput.name;
+      input.programCode = updateProgrammeInput.programCode;
+      input.skill = skill_id;
+      input.type = updateProgrammeInput.type;
+      input.venue = updateProgrammeInput.venue || null;
+      input.groupCount = updateProgrammeInput.groupCount;
+      input.conceptNote = updateProgrammeInput.conceptNote;
 
-      return this.programmeRepository.save(programme)
+      return this.programmeRepository.update(id, input);
     } catch {
       throw new HttpException(
         'An Error have when updating programme , please check the all required fields are filled ',

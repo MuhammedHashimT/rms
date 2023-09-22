@@ -10,9 +10,7 @@ import { fieldsProjection } from 'graphql-fields-list';
 
 @Resolver(() => Credential)
 export class CredentialsResolver {
-  constructor(
-    private readonly credentialsService: CredentialsService
-  ) {}
+  constructor(private readonly credentialsService: CredentialsService) {}
 
   @Mutation(() => Credential)
   // @UsePipes(AuthPipe)
@@ -28,30 +26,28 @@ export class CredentialsResolver {
   @HasRoles(Roles.Controller, Roles.Admin, Roles.TeamManager)
   @UseGuards(RolesGuard)
   @Query(() => [Credential], { name: 'credentials' })
-  findAll( 
-    @Info() info : any,
-  ) {
+  findAll(@Info() info: any) {
     const fields = Object.keys(fieldsProjection(info));
-    return this.credentialsService.findAll( fields);
+    return this.credentialsService.findAll(fields);
   }
+
 
   @Query(() => [Credential], { name: 'credentialsByTeam' })
-  findAllByTeam(@Args('team', { type: () => String }) team: string) {
+  async findAllByTeam(@Args('team', { type: () => String }) team: string, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     return this.credentialsService.findByTeam(team);
   }
-  
+
   @Query(() => [Credential], { name: 'credentialsByRole' })
-  findAllByRole(@Args('role', { type: () => Roles }) role: Roles) {
+  async findAllByRole(@Args('role', { type: () => Roles }) role: Roles, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     return this.credentialsService.findByRole(role);
   }
-
-
 
   @HasRoles(Roles.Controller, Roles.Admin, Roles.TeamManager)
   @UseGuards(RolesGuard)
   @Query(() => Credential, { name: 'credential' })
-  findOne(@Args('id', { type: () => Int }) id: number,
-  @Info() info : any) {
+  findOne(@Args('id', { type: () => Int }) id: number, @Info() info: any) {
     const fields = Object.keys(fieldsProjection(info));
     return this.credentialsService.findOne(id, fields);
   }
@@ -75,7 +71,7 @@ export class CredentialsResolver {
 
   @UseGuards(RolesGuard)
   @Query(() => Credential)
-  checkLoggedIn( @Context('req') request: any) {
+  checkLoggedIn(@Context('req') request: any) {
     return this.credentialsService.checkLoggedIn(request);
   }
 }

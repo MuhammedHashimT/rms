@@ -8,10 +8,12 @@ import { AuthPipe } from './pipe/auth.pipe';
 import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { fieldsProjection } from 'graphql-fields-list';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Section)
 export class SectionsResolver {
-  constructor(private readonly sectionsService: SectionsService) {}
+  constructor(private readonly sectionsService: SectionsService,
+    private readonly credentialsService: CredentialsService,) {}
 
   @Mutation(() => Section)
   @UsePipes(AuthPipe)
@@ -22,15 +24,16 @@ export class SectionsResolver {
   }
 
   @Query(() => [Section], { name: 'sections' })
-  findAll(@Info() info: any) {
+  async findAll(@Info() info: any, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.sectionsService.findAll(fields);
   }
 
   @Query(() => Section, { name: 'section' })
-  findOne(@Args('id', { type: () => Int }) id: number, @Info() info: any) {
+  async findOne(@Args('id', { type: () => Int }) id: number, @Args('api_key') api_key: string, @Info() info: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
-
     return this.sectionsService.findOne(id, fields);
   }
 

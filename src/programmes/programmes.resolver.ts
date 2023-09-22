@@ -10,11 +10,12 @@ import { Roles } from 'src/credentials/roles/roles.enum';
 import { ScheduleCreate } from './dto/scheduleCreate.dto';
 import { createInput } from './dto/create-inputs.inputs';
 import { fieldsProjection } from 'graphql-fields-list';
-
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Programme)
 export class ProgrammesResolver {
-  constructor(private readonly programmesService: ProgrammesService) {}
+  constructor(private readonly programmesService: ProgrammesService,
+    private readonly credentialsService: CredentialsService,) {}
 
   // @UsePipes(AuthPipe)
   @Mutation(() => Programme)
@@ -39,28 +40,32 @@ export class ProgrammesResolver {
   }
 
   @Query(() => [Programme], { name: 'programmes' })
-  findAll(
-    @Info() info: any,
-  ) {
+  async findAll(@Info() info: any,  @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
-    return this.programmesService.findAll(  fields);
+    return this.programmesService.findAll(fields);
   }
 
   @Query(() => Programme, { name: 'programme' })
-  findOne(@Args('id', { type: () => Int }) id: number , @Info() info: any) {
+  async findOne(@Args('id', { type: () => Int }) id: number, @Args('api_key') api_key: string, @Info() info: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
-    return this.programmesService.findOne(id , fields);
+    return this.programmesService.findOne(id, fields);
   }
 
-  @Query(() => [Programme], { name: 'programmesByCategory' })
-  findAllByCategory(
-    @Args('categoriesName', { type: () => [String] }) categoriesName: string[],
-    @Info() info: any
-  ) {
+  @Query(() => [Programme], { name: 'resultEnteredProgrammes' })
+  async resultEnteredProgrammes(@Info() info: any, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
-    return this.programmesService.findByCategories(categoriesName , fields);
+    return this.programmesService.findResultEnteredProgrammes(fields);
   }
 
+  @Query(() => [Programme], { name: 'resultPublishedProgrammes' })
+  async resultPublishedProgrammes(@Info() info: any, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
+    const fields = Object.keys(fieldsProjection(info));
+    return this.programmesService.findResultPublishedProgrammes(fields);
+  }
 
   @Mutation(() => Programme)
   @HasRoles(Roles.Controller)
@@ -108,6 +113,6 @@ export class ProgrammesResolver {
 
   @Mutation(() => Programme)
   setAnyIssue(@Args('code') code: string, @Args('issue') issue: boolean) {
-    return this.programmesService.setAnyIssue(code , issue);
+    return this.programmesService.setAnyIssue(code, issue);
   }
 }

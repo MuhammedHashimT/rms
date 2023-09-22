@@ -3,10 +3,12 @@ import { TagService } from './tag.service';
 import { Tag } from './entities/tag.entity';
 import { CreateTagInput } from './dto/create-tag.input';
 import { UpdateTagInput } from './dto/update-tag.input';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Tag)
 export class TagResolver {
-  constructor(private readonly tagService: TagService) {}
+  constructor(private readonly tagService: TagService,
+    private readonly credentialsService: CredentialsService,) {}
 
   @Mutation(() => Tag)
   createTag(@Args('createTagInput') createTagInput: CreateTagInput) {
@@ -14,12 +16,14 @@ export class TagResolver {
   }
 
   @Query(() => [Tag], { name: 'tags' })
-  findAll() {
+  async findAll(@Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     return this.tagService.findAll();
   }
 
   @Query(() => Tag, { name: 'tag' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  async findOne(@Args('id', { type: () => Int }) id: number, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     return this.tagService.findOne(id);
   }
 

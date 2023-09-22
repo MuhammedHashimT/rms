@@ -5,6 +5,7 @@ import { CreateTeamInput } from './dto/create-team.input';
 import { UpdateTeamInput } from './dto/update-team.input';
 import { Team } from './entities/team.entity';
 import { fieldsIdChecker, fieldsValidator } from 'src/utils/util';
+import { Model } from 'src/programmes/entities/programme.entity';
 
 @Injectable()
 export class TeamsService {
@@ -120,11 +121,11 @@ export class TeamsService {
     }
   }
 
- async findOneByName(name: string , fields: string[]) {
+  async findOneByName(name: string, fields: string[]) {
     if (!name) {
       throw new HttpException(`team cannot be undefined`, HttpStatus.BAD_REQUEST);
     }
-    
+
     const allowedRelations = [
       'candidates',
       'candidates.candidateProgrammes',
@@ -178,11 +179,8 @@ export class TeamsService {
     if (!team) {
       throw new HttpException(`cant find team with id ${id}`, HttpStatus.BAD_REQUEST);
     }
-
-    Object.assign(team , updateTeamInput)
-    
     try {
-      return this.teamRepository.save(team)
+      return this.teamRepository.update(id, updateTeamInput);
     } catch (e) {
       throw new HttpException(
         'An Error have when updating team ',
@@ -236,23 +234,48 @@ export class TeamsService {
     gPoint: number = 0,
     iPoint: number = 0,
     hPoint: number = 0,
+    programModel: Model,
   ) {
     const team: Team = await this.teamRepository.findOneBy({ id });
     if (!team) {
       throw new HttpException(`cant find team with id ${id}`, HttpStatus.BAD_REQUEST);
     }
-    const totalPoint = team.totalPoint + tPoint;
-    const HousePoint = team.HousePoint + hPoint;
-    const GroupPoint = team.GroupPoint + gPoint;
-    const IndividualPoint = team.IndividualPoint + iPoint;
 
+    // declaring variables
+
+    let totalPoint: number = 0;
+    let HousePoint: number = 0;
+    let GroupPoint: number = 0;
+    let IndividualPoint: number = 0;
+    let totalSportsPoint: number = 0;
+    let HouseSportsPoint: number = 0;
+    let GroupSportsPoint: number = 0;
+    let IndividualSportsPoint: number = 0;
+
+    // checking if the programme is arts or sports
+    if (programModel === Model.Arts) {
+      totalPoint = team.totalPoint + tPoint;
+      HousePoint = team.HousePoint + hPoint;
+      GroupPoint = team.GroupPoint + gPoint;
+      IndividualPoint = team.IndividualPoint + iPoint;
+    } else if (programModel === Model.Sports) {
+      totalSportsPoint = team.totalSportsPoint + tPoint;
+      HouseSportsPoint = team.HouseSportsPoint + hPoint;
+      GroupSportsPoint = team.GroupSportsPoint + gPoint;
+      IndividualSportsPoint = team.IndividualSportsPoint + iPoint;
+    }
     try {
+      // saving the team
       return this.teamRepository.save({
         ...team,
         totalPoint,
         HousePoint,
         GroupPoint,
         IndividualPoint,
+        totalSportsPoint,
+        HouseSportsPoint,
+        GroupSportsPoint,
+        IndividualSportsPoint,
       });
     } catch (e) {
       throw new HttpException(

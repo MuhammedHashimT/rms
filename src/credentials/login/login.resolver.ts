@@ -26,11 +26,12 @@ export class LoginResolver {
       if (!val) {
         throw new Error('Invalid Username or Password');
       }
-
+      console.log(val);
+      
       if (val.token) {
         context.cookie('__user', val.token, {
             httpOnly: true,
-            maxAge: 1000 * 60 * 60 * 24 * 365,
+            maxAge: 1000 * 60 * 60 * 24 * 365, // 1 year cookie
             sameSite: 'none',
             secure: true,
         });
@@ -42,7 +43,7 @@ export class LoginResolver {
       throw new HttpException(err.message, HttpStatus.UNAUTHORIZED);
     }
   }
-
+  
   @Query(() => String)
   getCookieValue(@Context('req') req: any): string {
     const cookieValue = req.cookies['__user'];
@@ -52,7 +53,7 @@ export class LoginResolver {
   // logout
   @Mutation(() => Boolean)
   async logout(@Context() context: any) {
-    context.res.clearCookie('__user');
+    context.res.clearCookie('__user', { httpOnly: true, secure: true , sameSite : 'none'});
     return true;
   }
 }

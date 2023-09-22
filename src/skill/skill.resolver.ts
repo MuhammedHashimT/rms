@@ -8,10 +8,14 @@ import { UseGuards, UsePipes } from '@nestjs/common';
 import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { fieldsProjection } from 'graphql-fields-list';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Skill)
 export class SkillResolver {
-  constructor(private readonly skillService: SkillService) {}
+  constructor(
+    private readonly skillService: SkillService,
+    private readonly credentialsService: CredentialsService,
+  ) {}
 
   @UsePipes(AuthPipe)
   @Mutation(() => Skill)
@@ -22,19 +26,21 @@ export class SkillResolver {
   }
 
   @Query(() => [Skill], { name: 'skills' })
-  findAll(
-    @Info() info,
-  ) {
+  async findAll(@Info() info: any, @Args('api_key') api_key: string) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.skillService.findAll(fields);
   }
 
   @Query(() => Skill, { name: 'skill' })
-  findOne(@Args('id', { type: () => Int }) id: number, @Info() info
-  
+  async findOne(
+    @Args('id', { type: () => Int }) id: number,
+    @Args('api_key') api_key: string,
+    @Info() info: any,
   ) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
-    return this.skillService.findOne(id , fields);
+    return this.skillService.findOne(id, fields);
   }
 
   @Mutation(() => Skill)

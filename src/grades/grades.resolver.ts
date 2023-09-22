@@ -8,10 +8,12 @@ import { UseGuards, UsePipes } from '@nestjs/common';
 import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { fieldsProjection } from 'graphql-fields-list';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Grade)
 export class GradesResolver {
-  constructor(private readonly gradesService: GradesService) {}
+  constructor(private readonly gradesService: GradesService,
+    private readonly credentialsService: CredentialsService,) {}
 
   @UsePipes(AuthPipe)
   @HasRoles(Roles.Admin)
@@ -22,15 +24,18 @@ export class GradesResolver {
   }
 
   @Query(() => [Grade], { name: 'grades' })
-  findAll(
+  async findAll(
     @Info() info: any,
+    @Args('api_key') api_key: string,
   ) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.gradesService.findAll( fields);
   }
 
   @Query(() => Grade, { name: 'grade' })
-  findOne(@Args('id', { type: () => Int }) id: number , @Info() info: any) {
+  async findOne(@Args('id', { type: () => Int }) id: number , @Args('api_key') api_key: string, @Info() info: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.gradesService.findOne(id , fields);
   }

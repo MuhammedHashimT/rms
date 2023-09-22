@@ -8,10 +8,12 @@ import { UseGuards, UsePipes } from '@nestjs/common';
 import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { fieldsProjection } from 'graphql-fields-list';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => Team)
 export class TeamsResolver {
-  constructor(private readonly teamsService: TeamsService) {}
+  constructor(private readonly teamsService: TeamsService,
+    private readonly credentialsService: CredentialsService,) {}
 
   @UsePipes(AuthPipe)
   @Mutation(() => Team)
@@ -22,13 +24,15 @@ export class TeamsResolver {
   }
 
   @Query(() => [Team], { name: 'teams' })
-  findAll(@Info() info: any) {
+  async findAll(@Info() info: any, @Args('api_key') api_key: string,) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields  = Object.keys(fieldsProjection(info));
     return this.teamsService.findAll(fields);
   }
 
   @Query(() => Team, { name: 'team' })
-  findOne(@Args('id', { type: () => Int }) id: number, @Info() info: any) {
+  async findOne(@Args('id', { type: () => Int }) id: number, @Args('api_key') api_key: string, @Info() info: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
     const fields  = Object.keys(fieldsProjection(info));
     return this.teamsService.findOne(id, fields );
   }

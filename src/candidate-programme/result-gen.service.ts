@@ -491,12 +491,13 @@ export class ResultGenService {
           Gpoint,
           Ipoint,
           Hpoint,
+          candidateProgramme.programme.model,
         );
       }
 
       // set the point to candidate
 
-      this.candidateService.addPoint(candidateProgramme.candidate.id, ICpoint, GCpoint);
+      this.candidateService.addPoint(candidateProgramme.candidate.id, ICpoint, GCpoint , candidateProgramme.programme.model);
     }
 
     // set the result published to true

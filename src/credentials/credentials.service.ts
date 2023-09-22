@@ -60,18 +60,19 @@ export class CredentialsService {
 
     let teamId = null;
     if (team) {
-      teamId = await this.teamService.findOneByName(team, ['id']);
+      teamId = await this.teamService.findOneByName(team , ['id']);
     }
     let categoriesId = null;
     if (categories) {
       categoriesId = await this.categoriesMapper(categories);
     }
 
-    if ((roles == Roles.Controller || roles == Roles.TeamManager) && !categoriesId) {
+
+    if((roles == Roles.Controller || roles == Roles.TeamManager ) && !categoriesId) {
       throw new HttpException('You must select at least one category', HttpStatus.BAD_REQUEST);
     }
 
-    if (roles === Roles.TeamManager && !teamId) {
+    if(roles === Roles.TeamManager && !teamId) {
       throw new HttpException('You must select a team', HttpStatus.BAD_REQUEST);
     }
 
@@ -88,8 +89,11 @@ export class CredentialsService {
     return this.CredentialRepository.save(newCredential);
   }
 
-  async findAll(fields: string[]) {
-    const allowedRelations = ['team', 'categories'];
+ async findAll( fields: string[]) {
+    const allowedRelations = [
+      'team',
+      'categories',
+    ];
 
     // validating fields
     fields = fieldsValidator(fields, allowedRelations);
@@ -98,8 +102,8 @@ export class CredentialsService {
 
     try {
       const queryBuilder = this.CredentialRepository.createQueryBuilder('credential')
-        .leftJoinAndSelect('credential.team', 'team')
-        .leftJoinAndSelect('credential.categories', 'categories');
+      .leftJoinAndSelect('credential.team', 'team')
+      .leftJoinAndSelect('credential.categories', 'categories');
 
       queryBuilder.select(
         fields.map(column => {
@@ -123,8 +127,11 @@ export class CredentialsService {
     }
   }
 
-  async findOne(id: number, fields: string[]) {
-    const allowedRelations = ['team', 'categories'];
+ async  findOne(id: number, fields: string[] ) {
+    const allowedRelations = [
+      'team',
+      'categories',
+    ];
 
     // validating fields
     fields = fieldsValidator(fields, allowedRelations);
@@ -133,9 +140,9 @@ export class CredentialsService {
 
     try {
       const queryBuilder = this.CredentialRepository.createQueryBuilder('credential')
-        .where('credential.id = :id', { id })
-        .leftJoinAndSelect('credential.team', 'team')
-        .leftJoinAndSelect('credential.categories', 'categories');
+      .where('credential.id = :id', { id })
+      .leftJoinAndSelect('credential.team', 'team')
+      .leftJoinAndSelect('credential.categories', 'categories');
 
       queryBuilder.select(
         fields.map(column => {
@@ -159,50 +166,52 @@ export class CredentialsService {
     }
   }
 
-  async checkLoggedIn(req: any) {
-    const cookie = req.cookies['__user'];
+  async  checkLoggedIn( req : any ) {
 
-    if (!cookie) {
+    const cookie = req.cookies['__user']
+
+    if(!cookie){
       throw new HttpException('User not logged In', HttpStatus.FORBIDDEN);
     }
 
     const token: JwtPayload = await this.LoginService.validateJwtToken(cookie);
-
+   
     const username = token.username;
 
     if (!username) {
-      throw new HttpException('User not logged In', HttpStatus.FORBIDDEN);
+       throw new HttpException('User not logged In', HttpStatus.FORBIDDEN);
     }
 
     // find the user in the database
     const user = await this.findOneByUsername(username);
 
     if (!user) {
-      throw new HttpException('User not logged In', HttpStatus.FORBIDDEN);
+       throw new HttpException('User not logged In', HttpStatus.FORBIDDEN);
     }
 
-    req.user = user;
+    req.user = user
 
-    return user;
+    return user
   }
 
   async findByTeam(team: string) {
-    const teamId: Team = await this.teamService.findOneByName(team, ['id']);
+   const teamId : Team = await this.teamService.findOneByName(team, ['id']);
 
-    if (!teamId) {
-      throw new HttpException('Team not found', HttpStatus.BAD_REQUEST);
-    }
+   if(!teamId) {
+    throw new HttpException('Team not found', HttpStatus.BAD_REQUEST);
+   }
 
-    try {
-      const findOptions: FindOneOptions<Credential> = {
-        where: {
-          team: teamId,
-        } as FindOptionsWhere<Team>,
-        relations: ['team', 'categories'],
-      };
-      const credential = await this.CredentialRepository.find(findOptions);
-      return credential;
-    } catch (e) {
+   try{
+    const findOptions :FindOneOptions<Credential> = {
+      where: {
+        team: teamId,
+      } as FindOptionsWhere<Team>,
+      relations: ['team', 'categories'],
+    };
+    const credential = await this.CredentialRepository.find(findOptions);
+    return credential;
+   }
+    catch(e) {
       throw new HttpException(
         'An Error have when finding credential ',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -212,20 +221,23 @@ export class CredentialsService {
   }
 
   async findByRole(roles: Roles) {
-    try {
+    try{
       const credential = this.CredentialRepository.find({
-        where: {
-          roles,
-        },
-      });
+        where:{
+          roles
+        }
+      })
 
-      return credential;
-    } catch (err) {
+    return credential;
+    }
+
+    catch(err){
       throw new HttpException(
         'An Error have when finding credential ',
         HttpStatus.INTERNAL_SERVER_ERROR,
         { cause: err },
       );
+
     }
   }
 
@@ -241,8 +253,6 @@ export class CredentialsService {
   async update(updateCredentialInput: UpdateCredentialInput, user: Credential) {
     let { id, categories, team, password, roles, username } = updateCredentialInput;
 
-    const credential = await this.findOne(id, ['id']);
-
     const alreadyUser = await this.CredentialRepository.findOne({
       where: {
         username,
@@ -252,7 +262,7 @@ export class CredentialsService {
       throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
     }
 
-    const allCategories = await this.categoryService.findAll(['name']);
+    const allCategories = await this.categoryService.findAll( ['name']);
     const allCategoriesNames = allCategories.map(category => category.name);
 
     // the the users role and check if he is allowed to create a new user
@@ -265,7 +275,7 @@ export class CredentialsService {
       userRole === Roles.Controller &&
       this.checkCategoriesEquality(user.categories, allCategories)
     ) {
-      roles = Roles.Controller;
+      roles = Roles.Controller
       team = null;
     } else if (
       userRole === Roles.TeamManager &&
@@ -278,43 +288,42 @@ export class CredentialsService {
 
     let teamId = null;
     if (team) {
-      teamId = await this.teamService.findOneByName(team, ['id']);
+      teamId = await this.teamService.findOneByName(team , ['id']);
     }
     let categoriesId = null;
     if (categories) {
       categoriesId = await this.categoriesMapper(categories);
     }
 
-    if (roles === (Roles.Controller || Roles.TeamManager) && !categoriesId) {
+    if(roles === (Roles.Controller || Roles.TeamManager )  && !categoriesId) {
       throw new HttpException('You must select at least one category', HttpStatus.BAD_REQUEST);
     }
 
-    if (roles === Roles.TeamManager && !teamId) {
+    if(roles === Roles.TeamManager && !teamId) {
       throw new HttpException('You must select a team', HttpStatus.BAD_REQUEST);
     }
 
     let hashedPassword = await this.LoginService.hashPassword(password);
 
-    Object.assign(credential, {
+    return this.CredentialRepository.update(id, {
       username,
       password: hashedPassword,
-      roles,
+      roles: roles,
       team: teamId,
       categories: categoriesId,
     });
-
-    return this.CredentialRepository.save(credential);
   }
 
   async remove(id: number, user: Credential) {
-    const credential: Credential = await this.findOne(id, ['id', 'roles']);
+    
+    const credential: Credential = await this.findOne(id , ['id'  , 'roles' ]);
     if (!credential) {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
 
     let { roles } = credential;
 
-    const allCategories: Category[] = await this.categoryService.findAll(['name']);
+    const allCategories : Category[] = await this.categoryService.findAll(['name']);
 
     // the the users role and check if he is allowed to create a new user
     const userRole = user.roles;
@@ -350,7 +359,7 @@ export class CredentialsService {
     return FindedCategories;
   }
 
-  checkCategoriesEquality(categoryOne: any, categoryTwo: any) {
+  checkCategoriesEquality(categoryOne : any , categoryTwo : any) {
     if (categoryOne.length !== categoryTwo.length) {
       return false; // Arrays have different lengths, not equal
     }
@@ -370,7 +379,13 @@ export class CredentialsService {
   async checkPermissionOnCategories(user: Credential, categoryName: string) {
     // authenticating the user have permission to update the category
 
-    const categoryExists = user.categories?.some(category => category.name === categoryName);
+    const category = await this.categoryService.findOneByName(categoryName);
+
+    if (!category) {
+      throw new HttpException(`Cant find a category named ${categoryName}`, HttpStatus.BAD_REQUEST);
+    }
+
+    const categoryExists = user.categories?.some(category => category.name === category.name);
 
     if (!categoryExists) {
       throw new HttpException(
@@ -380,19 +395,15 @@ export class CredentialsService {
     }
   }
 
-  async checkPermissionOnCategoriesWithouError(user: Credential, categoryName: string) {
-    // authenticating the user have permission to update the category
-    const categoryExists = user.categories?.some(category => category.name === categoryName);
-
-    if (!categoryExists) {
-      return false;
-    }
-
-    return true;
-  }
 
   async checkPermissionOnTeam(user: Credential, teamName: string) {
-    const teamExists = user.team?.name === teamName;
+    const team = await this.teamService.findOneByName(teamName , ['id']);
+
+    if (!team) {
+      throw new HttpException(`Cant find a team named ${teamName}`, HttpStatus.BAD_REQUEST);
+    }
+
+    const teamExists = user.team?.id === team.id;
 
     if (!teamExists) {
       throw new HttpException(
@@ -402,13 +413,13 @@ export class CredentialsService {
     }
   }
 
-  async checkPermissionOnTeamWithouError(user: Credential, teamName: string) {
-    const teamExists = user.team?.name === teamName;
 
-    if (!teamExists) {
-      return false;
+  // checking the api key
+  async ValidateApiKey(apiKey: string) {
+  // check the given api is as on the env file
+    if (apiKey !== process.env.API_KEY) {
+      throw new HttpException('😬😬 You are not allowed to perform this!', HttpStatus.UNAUTHORIZED);
     }
-
-    return true;
   }
-}
+  
+} 

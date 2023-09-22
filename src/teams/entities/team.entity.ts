@@ -60,6 +60,22 @@ export class Team {
   @Field({ nullable: true })
   IndividualPoint: number;
 
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  totalSportsPoint: number;
+
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  HouseSportsPoint: number;
+
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  GroupSportsPoint: number;
+
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  IndividualSportsPoint: number;
+
   @Expose({ name: 'chest_no_series' })
   @Column({ nullable: true })
   @Field(() => Int, { nullable: true })
