@@ -314,6 +314,29 @@ export class CredentialsService {
     });
   }
 
+  async checkPermissionOnCategoriesWithouError(user: Credential, categoryName: string) {
+    // authenticating the user have permission to update the category
+    const categoryExists = user.categories?.some(category => category.name === categoryName);
+
+    if (!categoryExists) {
+      return false;
+    }
+
+    return true;
+  }
+
+  async checkPermissionOnTeam(user: Credential, teamName: string) {
+    const teamExists = user.team?.name === teamName;
+
+    if (!teamExists) {
+      throw new HttpException(
+        `You don't have permission to access the team ${teamName} `,
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+  }
+
+
   async remove(id: number, user: Credential) {
     
     const credential: Credential = await this.findOne(id , ['id'  , 'roles' ]);
@@ -396,21 +419,14 @@ export class CredentialsService {
   }
 
 
-  async checkPermissionOnTeam(user: Credential, teamName: string) {
-    const team = await this.teamService.findOneByName(teamName , ['id']);
-
-    if (!team) {
-      throw new HttpException(`Cant find a team named ${teamName}`, HttpStatus.BAD_REQUEST);
-    }
-
-    const teamExists = user.team?.id === team.id;
+  async checkPermissionOnTeamWithouError(user: Credential, teamName: string) {
+    const teamExists = user.team?.name === teamName;
 
     if (!teamExists) {
-      throw new HttpException(
-        `You don't have permission to access the team ${teamName} `,
-        HttpStatus.UNAUTHORIZED,
-      );
+      return false;
     }
+
+    return true;
   }
 
 

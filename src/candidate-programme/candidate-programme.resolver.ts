@@ -8,6 +8,8 @@ import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { fieldsProjection } from 'graphql-fields-list';
 import { CredentialsService } from 'src/credentials/credentials.service';
+import { ObjectManyCandidateProgramme } from './dto/many-upload.input';
+import { CreateManyCP } from './dto/create-many-cp';
 
 @Resolver(() => CandidateProgramme)
 export class CandidateProgrammeResolver {
@@ -40,6 +42,17 @@ export class CandidateProgrammeResolver {
     await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
     return this.candidateProgrammeService.findOne(id);
+  }
+
+  @HasRoles(Roles.Controller, Roles.TeamManager)
+  @UseGuards(RolesGuard)
+  @Mutation(() => ObjectManyCandidateProgramme)
+  createManyCandidateProgramme(
+    @Args('createManyCandidateProgrammeInput')
+    createManyCandidateProgrammeInput: CreateManyCP ,
+    @Context('req') req: any,
+  ) {
+    return this.candidateProgrammeService.createMany(createManyCandidateProgrammeInput.inputs , req.user);
   }
 
   // @UsePipes(CandidateProgrammePipe)

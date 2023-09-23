@@ -333,7 +333,26 @@ export class CandidatesService {
       );
     }
   }
+  
+  async findOneByChestNoWithoutError(chestNO: string) {
+    try {
+      const candidate = await this.candidateRepository.findOne({
+        where: {
+          chestNO,
+        },
+        relations: ['category', 'team', 'candidateProgrammes'],
+      });
 
+      if (!candidate) {
+        return null;
+      }
+
+      return candidate;
+    } catch (e) {
+      return null;
+    }
+  }
+  
   async findOneByChestNo(chestNO: string) {
     try {
       const candidate = await this.candidateRepository.findOne({
