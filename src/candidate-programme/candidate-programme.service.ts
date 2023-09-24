@@ -13,7 +13,6 @@ import { CategorySettings } from 'src/category-settings/entities/category-settin
 import { Type } from 'src/programmes/dto/create-programme.input';
 import { Team } from 'src/teams/entities/team.entity';
 import { CategoryService } from 'src/category/category.service';
-import { ResultGenService } from './result-gen.service';
 import { Credential } from 'src/credentials/entities/credential.entity';
 import { DetailsService } from 'src/details/details.service';
 import { CategorySettingsService } from 'src/category-settings/category-settings.service';
@@ -43,7 +42,7 @@ export class CandidateProgrammeService {
     private readonly customSettingsService: CustomSettingsService,
   ) {}
 
-  // same team candidates
+  // to get same team candidates
   teamCandidates(candidateProgrammes: CandidateProgramme[], team: Team) {
     return candidateProgrammes.filter((e: CandidateProgramme) => {
       return e.candidate?.team?.name == team.name;
@@ -66,7 +65,7 @@ export class CandidateProgrammeService {
 
     //  programme
     const programme: Programme = await this.programmeService.findOneByCode(programme_code);
- 
+
     if (!programme) {
       throw new HttpException(
         `Can't find programme with programme id ${programme_code}`,
@@ -82,7 +81,7 @@ export class CandidateProgrammeService {
     // checking the teamManager can add candidate to this programme
     if (user.roles === Roles.TeamManager) {
       // check permission on team
-     await this.credentialService.checkPermissionOnTeam(user, candidate.team.name);
+      await this.credentialService.checkPermissionOnTeam(user, candidate.team.name);
 
       const HaveAccess = (
         await this.categorySettingsService.findOne(category.settings.id, [
@@ -92,7 +91,6 @@ export class CandidateProgrammeService {
       ).isProgrammeListUpdatable;
 
       console.log(HaveAccess);
-      
 
       if (!HaveAccess) {
         throw new HttpException(
@@ -173,6 +171,7 @@ export class CandidateProgrammeService {
     }
   }
 
+  // create many candidate programme
   async createMany(
     createCandidateProgrammeInput: CreateCandidateProgrammeInput[],
     user: Credential,
@@ -356,7 +355,6 @@ export class CandidateProgrammeService {
     return { result: uploadedData, errors };
   }
 
-
   async findAll(fields: string[]) {
     const allowedRelations = [
       'programme',
@@ -461,11 +459,8 @@ export class CandidateProgrammeService {
 
     // cant change the programme
 
-    if(updateCandidateProgrammeInput.programme_code !== candidateProgramme.programme.programCode) {
-      throw new HttpException(
-        `Can't change the programme`,
-        HttpStatus.BAD_REQUEST,
-      );
+    if (updateCandidateProgrammeInput.programme_code !== candidateProgramme.programme.programCode) {
+      throw new HttpException(`Can't change the programme`, HttpStatus.BAD_REQUEST);
     }
 
     //  candidate
@@ -733,34 +728,34 @@ export class CandidateProgrammeService {
     const candidateGroupProgrammes: CandidateProgramme[] =
       await this.getCandidatesOfGroupOfCandidate(candidate.chestNO);
 
-      // check on custom settings
+    // check on custom settings
 
-      const customSetting = await this.customSettingsService.findByProgramCode(programme.programCode);
+    const customSetting = await this.customSettingsService.findByProgramCode(programme.programCode);
 
-      if(customSetting){
-        const customSettingId : CustomSetting = await this.customSettingsService.findOne(customSetting.id , ['max' , 'programmes.programCode' ,'programmes.id' ,'name']);
+    if (customSetting) {
+      const customSettingId: CustomSetting = await this.customSettingsService.findOne(
+        customSetting.id,
+        ['max', 'programmes.programCode', 'programmes.id', 'name'],
+      );
 
-        if(customSettingId){
+      if (customSettingId) {
+        const { max, programmes, name } = customSettingId;
+        const customProgramsOnCandidate = candidate.candidateProgrammes.filter(cp => {
+          for (let i = 0; i < programmes.length; i++) {
+            if (cp.programme.id == programmes[i].id) {
+              return true;
+            }
+          }
+        });
 
-         const {max , programmes , name } = customSettingId;
-         const customProgramsOnCandidate = candidate.candidateProgrammes.filter((cp)=>{
-           for(let i = 0 ; i < programmes.length ; i++){
-             if(cp.programme.id == programmes[i].id){
-               return true;
-             }
-           }
-         })
-
-         if(customProgramsOnCandidate.length >= max){
+        if (customProgramsOnCandidate.length >= max) {
           throw new HttpException(
             `The candidate ${candidate.name} can't participate in programme  ${programme.name}, maximum programmes on ${name} is ${max}`,
             HttpStatus.BAD_REQUEST,
           );
         }
-        }
-  
-  
       }
+    }
 
     //  settings
     const settings: CategorySettings = category.settings;
@@ -865,7 +860,7 @@ export class CandidateProgrammeService {
           );
         }
       }
-    } else if (programme.type !== Type.HOUSE && programme.model == Model.Sports){
+    } else if (programme.type !== Type.HOUSE && programme.model == Model.Sports) {
       // maximum sports programme
       if (settings.maxSports && (programme.type == Type.SINGLE || programme.type == Type.GROUP)) {
         const programmes: CandidateProgramme[] = candidate.candidateProgrammes;
@@ -909,107 +904,8 @@ export class CandidateProgrammeService {
           );
         }
       }
-
     }
   }
-
-  async checkEligibilityOnGroup(candidatesOfGroup: Candidate[], programme: Programme) {
-    // checking each candidate on the group
-
-    for (let i = 0; i < candidatesOfGroup.length; i++) {
-      const candidate = candidatesOfGroup[i];
-      await this.checkEligibility(candidate, programme);
-    }
-
-    // checking all candidates are in same team
-    const teams: Team[] = candidatesOfGroup.map((e: Candidate) => {
-      return e.team;
-    });
-
-    const isSameTeam: boolean = teams.every((val, i, arr) => val.id === arr[0].id);
-
-    if (!isSameTeam) {
-      throw new HttpException(`All candidates must be in same team`, HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  async checkAvailabilityOnTeam(candidate: Candidate, programme: Programme) {
-    // CHECKING THE LIMIT OF CANDIDATES IN A TEAM COVERED
-
-    const team: Team = candidate.team;
-
-    //  candidates of the programme
-    const programmeCandidates: CandidateProgramme[] = programme.candidateProgramme;
-    // candidates on the team
-
-    const onTeamCandidates = this.teamCandidates(programmeCandidates, team);
-
-    // On single programmes
-    if (programme.type == Type.SINGLE) {
-      if (onTeamCandidates.length >= programme.candidateCount) {
-        throw new HttpException(
-          `The limit of candidate from a team exceed , you have already ${onTeamCandidates.length} candidates out of ${programme.candidateCount} , please check it`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
-
-    // On Group or House programmes
-    if (programme.type !== Type.SINGLE) {
-      // checking The candidates on each group is exceed the limit or not
-      if (onTeamCandidates.length >= programme.groupCount) {
-        throw new HttpException(
-          `A team only have access to have ${programme.groupCount} groups on program ${programme.name}`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
-  }
-
-  // create many candidate programme
-  
-
-  async getCandidatesOfGroupOfCandidate(chessNo: string) {
-    const Query = this.candidateProgrammeRepository
-      .createQueryBuilder('c')
-      .leftJoinAndSelect('c.candidate', 'candidate')
-      .leftJoinAndSelect('c.programme', 'programme')
-      .leftJoinAndSelect('c.candidatesOfGroup', 'candidatesOfGroup')
-      .leftJoinAndSelect('candidate.category', 'category')
-      .leftJoinAndSelect('candidate.team', 'team')
-      .leftJoinAndSelect('programme.category', 'programmeCategory')
-      .leftJoinAndSelect('programme.skill', 'skill')
-      .leftJoinAndSelect('category.settings', 'settings')
-      .leftJoinAndSelect('candidate.candidateProgrammes', 'cp');
-
-    const candidatesOfGroups: CandidateProgramme[] = await Query.where(
-      'candidatesOfGroup.chestNO = :candidateId',
-      { candidateId: chessNo },
-    ).getMany();
-
-    return candidatesOfGroups;
-  }
-
-  async checkCandidateInGroupProgramme(chestNO: string, programCode: string) {
-    const Query = this.candidateProgrammeRepository
-      .createQueryBuilder('c')
-      .leftJoinAndSelect('c.programme', 'programme')
-      .leftJoinAndSelect('c.candidatesOfGroup', 'candidatesOfGroup');
-
-    const findedCandidatesOfGroups: CandidateProgramme = await Query.where(
-      'programme.programCode = :id',
-      {
-        id: programCode,
-      },
-    )
-      .andWhere('candidatesOfGroup.chestNO = :candidateId', { candidateId: chestNO })
-      .getOne();
-
-    const candidatesOfGroups: CandidateProgramme = await this.findOne(findedCandidatesOfGroups.id);
-
-    return candidatesOfGroups;
-  }
-
 
   async checkEligibilityWithoutError(candidate: Candidate, programme: Programme) {
     const Query = this.candidateProgrammeRepository
@@ -1223,6 +1119,25 @@ export class CandidateProgrammeService {
     return true;
   }
 
+  async checkEligibilityOnGroup(candidatesOfGroup: Candidate[], programme: Programme) {
+    // checking each candidate on the group
+
+    for (let i = 0; i < candidatesOfGroup.length; i++) {
+      const candidate = candidatesOfGroup[i];
+      await this.checkEligibility(candidate, programme);
+    }
+
+    // checking all candidates are in same team
+    const teams: Team[] = candidatesOfGroup.map((e: Candidate) => {
+      return e.team;
+    });
+
+    const isSameTeam: boolean = teams.every((val, i, arr) => val.id === arr[0].id);
+
+    if (!isSameTeam) {
+      throw new HttpException(`All candidates must be in same team`, HttpStatus.BAD_REQUEST);
+    }
+  }
 
   async checkEligibilityOnGroupWithoutError(candidatesOfGroup: Candidate[], programme: Programme) {
     // checking each candidate on the group
@@ -1248,6 +1163,39 @@ export class CandidateProgrammeService {
     }
 
     return true;
+  }
+
+  async checkAvailabilityOnTeam(candidate: Candidate, programme: Programme) {
+    // CHECKING THE LIMIT OF CANDIDATES IN A TEAM COVERED
+
+    const team: Team = candidate.team;
+
+    //  candidates of the programme
+    const programmeCandidates: CandidateProgramme[] = programme.candidateProgramme;
+    // candidates on the team
+
+    const onTeamCandidates = this.teamCandidates(programmeCandidates, team);
+
+    // On single programmes
+    if (programme.type == Type.SINGLE) {
+      if (onTeamCandidates.length >= programme.candidateCount) {
+        throw new HttpException(
+          `The limit of candidate from a team exceed , you have already ${onTeamCandidates.length} candidates out of ${programme.candidateCount} , please check it`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
+
+    // On Group or House programmes
+    if (programme.type !== Type.SINGLE) {
+      // checking The candidates on each group is exceed the limit or not
+      if (onTeamCandidates.length >= programme.groupCount) {
+        throw new HttpException(
+          `A team only have access to have ${programme.groupCount} groups on program ${programme.name}`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    }
   }
 
   async checkAvailabilityOnTeamWitoutError(candidate: Candidate, programme: Programme) {
@@ -1279,4 +1227,44 @@ export class CandidateProgrammeService {
     return true;
   }
 
+  async getCandidatesOfGroupOfCandidate(chessNo: string) {
+    const Query = this.candidateProgrammeRepository
+      .createQueryBuilder('c')
+      .leftJoinAndSelect('c.candidate', 'candidate')
+      .leftJoinAndSelect('c.programme', 'programme')
+      .leftJoinAndSelect('c.candidatesOfGroup', 'candidatesOfGroup')
+      .leftJoinAndSelect('candidate.category', 'category')
+      .leftJoinAndSelect('candidate.team', 'team')
+      .leftJoinAndSelect('programme.category', 'programmeCategory')
+      .leftJoinAndSelect('programme.skill', 'skill')
+      .leftJoinAndSelect('category.settings', 'settings')
+      .leftJoinAndSelect('candidate.candidateProgrammes', 'cp');
+
+    const candidatesOfGroups: CandidateProgramme[] = await Query.where(
+      'candidatesOfGroup.chestNO = :candidateId',
+      { candidateId: chessNo },
+    ).getMany();
+
+    return candidatesOfGroups;
+  }
+
+  async checkCandidateInGroupProgramme(chestNO: string, programCode: string) {
+    const Query = this.candidateProgrammeRepository
+      .createQueryBuilder('c')
+      .leftJoinAndSelect('c.programme', 'programme')
+      .leftJoinAndSelect('c.candidatesOfGroup', 'candidatesOfGroup');
+
+    const findedCandidatesOfGroups: CandidateProgramme = await Query.where(
+      'programme.programCode = :id',
+      {
+        id: programCode,
+      },
+    )
+      .andWhere('candidatesOfGroup.chestNO = :candidateId', { candidateId: chestNO })
+      .getOne();
+
+    const candidatesOfGroups: CandidateProgramme = await this.findOne(findedCandidatesOfGroups.id);
+
+    return candidatesOfGroups;
+  }
 }
