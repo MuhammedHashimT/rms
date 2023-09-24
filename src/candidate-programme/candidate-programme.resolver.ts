@@ -10,6 +10,7 @@ import { fieldsProjection } from 'graphql-fields-list';
 // import { CreateManyCP } from './dto/creade-many-cp';
 import { ObjectManyCandidateProgramme } from './dto/many-upload.input';
 import { CredentialsService } from 'src/credentials/credentials.service';
+import { CreateManyCP } from './dto/create-many-cp';
 
 @Resolver(() => CandidateProgramme)
 export class CandidateProgrammeResolver {
