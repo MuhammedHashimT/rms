@@ -67,6 +67,16 @@ export class ProgrammesResolver {
     return this.programmesService.findResultPublishedProgrammes(fields);
   }
 
+  @Query(() => [Programme], { name: 'programmesByCategory' })
+  findAllByCategory(
+    @Args('categoriesName', { type: () => [String] }) categoriesName: string[],
+    @Info() info: any
+  ) {
+    const fields = Object.keys(fieldsProjection(info));
+    return this.programmesService.findByCategories(categoriesName , fields);
+  }
+
+
   @Mutation(() => Programme)
   @HasRoles(Roles.Controller)
   @UseGuards(RolesGuard)
