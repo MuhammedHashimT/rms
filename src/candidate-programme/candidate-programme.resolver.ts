@@ -7,9 +7,9 @@ import { UseGuards } from '@nestjs/common';
 import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { fieldsProjection } from 'graphql-fields-list';
-import { CredentialsService } from 'src/credentials/credentials.service';
+import { CreateManyCP } from './dto/creade-many-cp';
 import { ObjectManyCandidateProgramme } from './dto/many-upload.input';
-import { CreateManyCP } from './dto/create-many-cp';
+import { CredentialsService } from 'src/credentials/credentials.service';
 
 @Resolver(() => CandidateProgramme)
 export class CandidateProgrammeResolver {
@@ -30,6 +30,17 @@ export class CandidateProgrammeResolver {
     return this.candidateProgrammeService.create(createCandidateProgrammeInput, req.user);
   }
 
+  @HasRoles(Roles.Controller, Roles.TeamManager)
+  @UseGuards(RolesGuard)
+  @Mutation(() => ObjectManyCandidateProgramme)
+  createManyCandidateProgramme(
+    @Args('createManyCandidateProgrammeInput')
+    createManyCandidateProgrammeInput: CreateManyCP ,
+    @Context('req') req: any,
+  ) {
+    return this.candidateProgrammeService.createMany(createManyCandidateProgrammeInput.inputs , req.user);
+  }
+
   @Query(() => [CandidateProgramme], { name: 'candidateProgrammes' })
   async findAll(@Info() info: any, @Args('api_key') api_key: string) {
     await this.credentialsService.ValidateApiKey(api_key);
@@ -44,37 +55,27 @@ export class CandidateProgrammeResolver {
     return this.candidateProgrammeService.findOne(id);
   }
 
-  @HasRoles(Roles.Controller, Roles.TeamManager)
-  @UseGuards(RolesGuard)
-  @Mutation(() => ObjectManyCandidateProgramme)
-  createManyCandidateProgramme(
-    @Args('createManyCandidateProgrammeInput')
-    createManyCandidateProgrammeInput: CreateManyCP ,
-    @Context('req') req: any,
-  ) {
-    return this.candidateProgrammeService.createMany(createManyCandidateProgrammeInput.inputs , req.user);
-  }
 
-  // @UsePipes(CandidateProgrammePipe)
-  @Mutation(() => CandidateProgramme)
-  @HasRoles(Roles.Controller, Roles.TeamManager)
-  @UseGuards(RolesGuard)
-  updateCandidateProgramme(
-    @Args('updateCandidateProgrammeInput')
-    updateCandidateProgrammeInput: UpdateCandidateProgrammeInput,
-    @Context('req') req: any,
-  ) {
-    return this.candidateProgrammeService.update(
-      updateCandidateProgrammeInput.id,
-      updateCandidateProgrammeInput,
-      req.user,
-    );
-  }
+    // @UsePipes(CandidateProgrammePipe)
+    @Mutation(() => CandidateProgramme)
+    @HasRoles(Roles.Controller, Roles.TeamManager)
+    @UseGuards(RolesGuard)
+    updateCandidateProgramme(
+      @Args('updateCandidateProgrammeInput')
+      updateCandidateProgrammeInput: UpdateCandidateProgrammeInput,
+      @Context('req') req: any,
+    ) {
+      return this.candidateProgrammeService.update(
+        updateCandidateProgrammeInput.id,
+        updateCandidateProgrammeInput,
+        req.user,
+      );
+    }
 
-  @Mutation(() => CandidateProgramme)
-  @HasRoles(Roles.Controller, Roles.TeamManager)
-  @UseGuards(RolesGuard)
-  removeCandidateProgramme(@Args('id', { type: () => Int }) id: number, @Context('req') req: any) {
-    return this.candidateProgrammeService.remove(id, req.user);
+    @Mutation(() => CandidateProgramme)
+    @HasRoles(Roles.Controller, Roles.TeamManager)
+    @UseGuards(RolesGuard)
+    removeCandidateProgramme(@Args('id', { type: () => Int }) id: number, @Context('req') req: any) {
+      return this.candidateProgrammeService.remove(id, req.user);
+    }
   }
-}
