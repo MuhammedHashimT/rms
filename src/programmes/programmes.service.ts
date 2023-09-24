@@ -13,8 +13,8 @@ import { Category } from 'src/category/entities/category.entity';
 import { Skill } from 'src/skill/entities/skill.entity';
 import { CredentialsService } from '../credentials/credentials.service';
 import { ScheduleCreate } from './dto/scheduleCreate.dto';
-import { createInput } from './dto/create-inputs.inputs';
 import { fieldsIdChecker, fieldsValidator, isDateValid } from 'src/utils/util';
+import { createInput } from './dto/create-inputs.inputs';
 
 @Injectable()
 export class ProgrammesService {
@@ -28,7 +28,7 @@ export class ProgrammesService {
 
   //  To create many Programmes at a time , usually using on Excel file upload
 
-  async createMany(createProgrammeInputArray: createInput, user: Credential) {
+  async createMany(createProgrammeInputArray: createInput , user: Credential) {
     // the final data variable
     var FinalData: Programme[] = [];
     const allData: {
