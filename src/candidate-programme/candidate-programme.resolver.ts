@@ -7,7 +7,7 @@ import { UseGuards } from '@nestjs/common';
 import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { fieldsProjection } from 'graphql-fields-list';
-import { CreateManyCP } from './dto/creade-many-cp';
+// import { CreateManyCP } from './dto/creade-many-cp';
 import { ObjectManyCandidateProgramme } from './dto/many-upload.input';
 import { CredentialsService } from 'src/credentials/credentials.service';
 
