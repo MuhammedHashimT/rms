@@ -93,7 +93,7 @@ import { TagModule } from './tag/tag.module';
       cache: 'bounded',
       introspection:true ,
     cors: {
-        origin: 'https://rms-front-five.vercel.app/',
+        origin: true,
         credentials: true,
 
       },
