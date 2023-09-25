@@ -18,7 +18,7 @@ async function bootstrap() {
 
   // cors origin
   app.enableCors({
-    origin: true,
+    origin: 'https://rms-front-five.vercel.app/',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   });
