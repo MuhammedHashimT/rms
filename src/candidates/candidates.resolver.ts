@@ -13,7 +13,7 @@ import { CredentialsService } from 'src/credentials/credentials.service';
 @Resolver(() => Candidate)
 export class CandidatesResolver {
   constructor(private readonly candidatesService: CandidatesService,
-    private readonly credentialsService: CredentialsService) {}
+    private readonly credentialsService: CredentialsService) { }
 
   // @UsePipes(CandidatePipe)
   @Mutation(() => Candidate)
@@ -44,7 +44,16 @@ export class CandidatesResolver {
   ) {
     await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
-    return this.candidatesService.findAll( fields);
+    return this.candidatesService.findAll(fields);
+  }
+
+  @Query(() => Candidate, { name: 'candidateByChestNo' })
+  async findCandidateByChestNo(
+    @Args('chestNo') chestNo: string,
+    @Args('api_key') api_key: string
+  ) {
+    await this.credentialsService.ValidateApiKey(api_key);
+    return this.candidatesService.findOneByChestNo(chestNo);
   }
 
   @Query(() => [Candidate], { name: 'candidatesByCategory' })
@@ -53,7 +62,7 @@ export class CandidatesResolver {
     @Info() info: any
   ) {
     const fields = Object.keys(fieldsProjection(info));
-    return this.candidatesService.findByCategories(categoriesName , fields);
+    return this.candidatesService.findByCategories(categoriesName, fields);
   }
 
   @Query(() => [Candidate], { name: 'candidatesByCategoriesAndTeam' })
@@ -63,15 +72,23 @@ export class CandidatesResolver {
     @Info() info: any
   ) {
     const fields = Object.keys(fieldsProjection(info));
-    return this.candidatesService.findByCategoryNamesAndTeamName(categoriesName, teamName , fields);
+    return this.candidatesService.findByCategoryNamesAndTeamName(categoriesName, teamName, fields);
   }
 
   @Query(() => Candidate, { name: 'candidate' })
-  async findOne(@Args('id', { type: () => Int }) id: number , @Args('api_key') api_key: string, @Info() info: any) {
+  async findOne(@Args('id', { type: () => Int }) id: number, @Args('api_key') api_key: string, @Info() info: any) {
     await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
-    return this.candidatesService.findOne(id , fields);
+    return this.candidatesService.findOne(id, fields);
   }
+
+  @Query(() => [Candidate], { name: 'findOverallToppers' })
+  async findOverallToppers(@Args('api_key') api_key: string, @Info() info: any) {
+    await this.credentialsService.ValidateApiKey(api_key);
+    const fields = Object.keys(fieldsProjection(info));
+    return this.candidatesService.findOverallToppers(fields);
+  }
+
 
   @Mutation(() => Candidate)
   @HasRoles(Roles.Controller)
