@@ -53,6 +53,13 @@ export class ProgrammesResolver {
     return this.programmesService.findOne(id, fields);
   }
 
+  @Query(() => Programme, { name: 'programmeByCode' })
+  async findProgrammeByCode(@Args('code') code: string, @Args('api_key') api_key: string) {
+    await this.credentialsService.ValidateApiKey(api_key);
+    return this.programmesService.findOneByCode(code,);
+  }
+
+
   @Query(() => [Programme], { name: 'resultEnteredProgrammes' })
   async resultEnteredProgrammes(@Info() info: any, @Args('api_key') api_key: string,) {
     await this.credentialsService.ValidateApiKey(api_key);
