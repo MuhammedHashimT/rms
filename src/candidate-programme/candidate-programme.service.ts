@@ -49,6 +49,10 @@ export class CandidateProgrammeService {
     });
   }
 
+   hasDuplicateValues = (arr) => {
+    return new Set(arr).size !== arr.length;
+  };
+
   // create candidate programme
   async create(createCandidateProgrammeInput: CreateCandidateProgrammeInput, user: Credential) {
     const { chestNo, programme_code } = createCandidateProgrammeInput;
@@ -106,6 +110,13 @@ export class CandidateProgrammeService {
       if (!candidatesOfGroup) {
         throw new HttpException(`Can't find candidates of group`, HttpStatus.BAD_REQUEST);
       }
+
+      const hasDuplicateValues = this.hasDuplicateValues(candidatesOfGroup)
+
+      if (hasDuplicateValues) {
+        throw new HttpException(`Duplicate chestNo detected`, HttpStatus.BAD_REQUEST);
+      }
+
 
       // checking the group is full
       if (candidatesOfGroup.length !== programme.candidateCount) {
@@ -245,6 +256,13 @@ export class CandidateProgrammeService {
         if (!candidatesOfGroup) {
           errors.push(`Can't find candidates of group on programme ${programme.programCode}`);
           continue;
+        }
+
+        
+        const hasDuplicateValues = this.hasDuplicateValues(candidatesOfGroup)
+
+        if (hasDuplicateValues) {
+          errors.push(`duplicate chestNo detected on programme ${programme.programCode}`)
         }
 
         // checking the group is full
@@ -508,6 +526,12 @@ export class CandidateProgrammeService {
 
     // checking eligibility on single and group
     if (programme.type !== Type.SINGLE) {
+
+        const hasDuplicateValues = this.hasDuplicateValues(updateCandidateProgrammeInput.candidatesOfGroup)
+
+      if (hasDuplicateValues) {
+        throw new HttpException(`Duplicate chestNo detected`, HttpStatus.BAD_REQUEST);
+      }
       // checking the group is full
       if (updateCandidateProgrammeInput.candidatesOfGroup.length !== programme.candidateCount) {
         throw new HttpException(
