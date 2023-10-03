@@ -56,6 +56,13 @@ export class JudgeResolver {
     return this.judgeService.remove(id);
   }
 
+   @Mutation(() => Judge)
+  @HasRoles(Roles.Controller)
+  @UseGuards(RolesGuard)
+  judgeLogin(@Args('username') username: string , @Args('password') password: string  ) {
+    return this.judgeService.judgeLogin(username , password);
+  }
+  
   @Mutation(() => String)
   uploadMarkByJudge(
     @Args('programmeCode') programmeCode: string,
