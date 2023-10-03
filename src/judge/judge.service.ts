@@ -150,6 +150,43 @@ export class JudgeService {
     }
   }
 
+async findOneByUsername(username: string, fields: string[]) {
+    const allowedRelations = ['programme'];
+
+    // validating fields
+    fields = fieldsValidator(fields, allowedRelations);
+    // checking if fields contains id
+    fields = fieldsIdChecker(fields);
+
+    try {
+      const queryBuilder = this.judgeRepository
+        .createQueryBuilder('judge')
+        .where('judge.username = :username', { username })
+        .leftJoinAndSelect('judge.programme', 'programme')
+        .orderBy('judge.id', 'ASC');
+
+      queryBuilder.select(
+        fields.map(column => {
+          const splitted = column.split('.');
+
+          if (splitted.length > 1) {
+            return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
+          } else {
+            return `judge.${column}`;
+          }
+        }),
+      );
+      const judge = await queryBuilder.getOne();
+      return judge;
+    } catch (e) {
+      throw new HttpException(
+        'An Error have when finding judge ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: e },
+      );
+    }
+  }
+    
   async update(id: number, updateJudgeInput: UpdateJudgeInput, user: Credential) {
     const { username, password, judgeName, programmeCode } = updateJudgeInput;
 
@@ -211,6 +248,24 @@ export class JudgeService {
     }
   }
 
+  async judgeLogin( username : string , password : string){
+
+    // find the judge by username
+    const judge = await this.findOneByUsername(username , ['id' , 'username' , 'password' , 'programme' , 'programme.id' , 'programme.name' , 'programme.programCode'  ])
+
+    if(!judge){
+      throw new HttpException('Invalid Username', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
+    const comparedPassword = await this.LoginService.comparePassword(password , judge.password)
+
+    if(!comparedPassword){
+      throw new HttpException('Invalid Password', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    return judge
+  }
+  
   async uploadMarkByJudge(
     // DO FIRST THE DTO SETTING OF CANDIDATE AND PROGRAMME EXCEL UPLOAD
     judgeId: number,
