@@ -13,8 +13,8 @@ import { Category } from 'src/category/entities/category.entity';
 import { Skill } from 'src/skill/entities/skill.entity';
 import { CredentialsService } from '../credentials/credentials.service';
 import { ScheduleCreate } from './dto/scheduleCreate.dto';
-import { fieldsIdChecker, fieldsValidator, isDateValid } from 'src/utils/util';
 import { createInput } from './dto/create-inputs.inputs';
+import { fieldsIdChecker, fieldsValidator, isDateValid } from 'src/utils/util';
 
 @Injectable()
 export class ProgrammesService {
@@ -28,7 +28,7 @@ export class ProgrammesService {
 
   //  To create many Programmes at a time , usually using on Excel file upload
 
-  async createMany(createProgrammeInputArray: createInput , user: Credential) {
+  async createMany(createProgrammeInputArray: createInput, user: Credential) {
     // the final data variable
     var FinalData: Programme[] = [];
     const allData: {
@@ -715,9 +715,12 @@ export class ProgrammesService {
       venue: number;
       programme: Programme;
     }[] = [];
+
+    const UploadedProgrammes : Programme[] = []
+
+    console.log(scheduleData);
     
-      const UploadedProgrammes : Programme[] = []
-    
+
     for (let index = 0; index < scheduleData.inputs.length; index++) {
       const data: CreateSchedule = scheduleData.inputs[index];
 
@@ -758,9 +761,7 @@ export class ProgrammesService {
           throw new HttpException(`Venue must be a number`, HttpStatus.BAD_REQUEST);
         }
       }
-    }
-
-     allData.push({
+      allData.push({
         code: code ,
         date: date ,
         venue: venue,
@@ -768,6 +769,7 @@ export class ProgrammesService {
       })
     }
 
+    
 
     try {
       if (allData.length !== scheduleData.inputs.length) {
@@ -787,10 +789,8 @@ export class ProgrammesService {
         programme.date = date;
         programme.venue = venue;
 
-        return this.programmeRepository.save(programme);
-      }
-
-     const upload = await this.programmeRepository.save(programme);
+        console.log("pushed");
+        const upload = await this.programmeRepository.save(programme);
 
         UploadedProgrammes.push(upload)
 
@@ -798,7 +798,7 @@ export class ProgrammesService {
       }
 
       return UploadedProgrammes;
-
+      
     } catch (e) {
       throw new HttpException(
         'An Error have when updating programme ',
