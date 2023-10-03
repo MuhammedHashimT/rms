@@ -708,14 +708,16 @@ export class ProgrammesService {
     }
   }
 
-  async setManySchedule(scheduleData: ScheduleCreate, user: Credential) {
+  async setManySchedule(scheduleData: any, user: Credential) {
     const allData: {
       code: string;
       date: Date;
       venue: number;
       programme: Programme;
     }[] = [];
-
+    
+      const UploadedProgrammes : Programme[] = []
+    
     for (let index = 0; index < scheduleData.inputs.length; index++) {
       const data: CreateSchedule = scheduleData.inputs[index];
 
@@ -758,6 +760,15 @@ export class ProgrammesService {
       }
     }
 
+     allData.push({
+        code: code ,
+        date: date ,
+        venue: venue,
+        programme: programme
+      })
+    }
+
+
     try {
       if (allData.length !== scheduleData.inputs.length) {
         throw new HttpException(
@@ -778,6 +789,16 @@ export class ProgrammesService {
 
         return this.programmeRepository.save(programme);
       }
+
+     const upload = await this.programmeRepository.save(programme);
+
+        UploadedProgrammes.push(upload)
+
+
+      }
+
+      return UploadedProgrammes;
+
     } catch (e) {
       throw new HttpException(
         'An Error have when updating programme ',
