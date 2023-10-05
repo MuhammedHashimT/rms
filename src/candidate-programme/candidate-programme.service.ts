@@ -24,11 +24,7 @@ import { CustomSetting } from 'src/custom-settings/entities/custom-setting.entit
 
 @Injectable()
 export class CandidateProgrammeService {
-  getCandidatesOfProgramme(
-    programCode: string,
-  ): CandidateProgramme[] | PromiseLike<CandidateProgramme[]> {
-    throw new Error('Method not implemented.');
-  }
+  
   constructor(
     @InjectRepository(CandidateProgramme)
     private candidateProgrammeRepository: Repository<CandidateProgramme>,
@@ -1291,4 +1287,11 @@ export class CandidateProgrammeService {
 
     return candidatesOfGroups;
   }
+
+   async getCandidatesOfProgramme(programCode: string) {
+    const programme: Programme = await this.programmeService.findOneByCode(programCode);
+
+    return programme.candidateProgramme;
+  }
+  
 }
