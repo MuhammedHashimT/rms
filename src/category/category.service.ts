@@ -47,7 +47,6 @@ export class CategoryService {
     const allowedRelations = [
       'section',
       'candidates',
-      'programmes',
       'settings',
       'candidates.team',
     ];
@@ -61,7 +60,6 @@ export class CategoryService {
       const queryBuilder = this.categoryRepository.createQueryBuilder('category')
         .leftJoinAndSelect('category.section', 'section')
         .leftJoinAndSelect('category.candidates', 'candidates')
-        .leftJoinAndSelect('category.programmes', 'programmes')
         .leftJoinAndSelect('category.settings', 'settings')
         .leftJoinAndSelect('candidates.team', 'team');
 
