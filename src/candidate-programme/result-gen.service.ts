@@ -72,6 +72,12 @@ export class ResultGenService {
     // verify the result
     await this.verifyResult(input.inputs, programCode);
 
+        for (let index = 0; index < programme.candidateProgramme.length; index++) {
+      const candidate = candidatesOfProgramme[index];
+
+      candidate.mark = input.inputs[index].mark
+    }
+
     // process the result
     candidatesOfProgramme = await this.processResult(programme);
     try {
