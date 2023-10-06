@@ -243,26 +243,26 @@ export class TeamsService {
 
     // declaring variables
 
-    let totalPoint: number = 0;
-    let HousePoint: number = 0;
-    let GroupPoint: number = 0;
-    let IndividualPoint: number = 0;
-    let totalSportsPoint: number = 0;
-    let HouseSportsPoint: number = 0;
-    let GroupSportsPoint: number = 0;
-    let IndividualSportsPoint: number = 0;
+    let totalPoint: number = team.totalPoint || 0;
+    let HousePoint: number =team.HousePoint || 0;
+    let GroupPoint: number = team.GroupPoint || 0;
+    let IndividualPoint: number = team.IndividualPoint || 0;
+    let totalSportsPoint: number = team.totalSportsPoint || 0;
+    let HouseSportsPoint: number = team.HouseSportsPoint  || 0;
+    let GroupSportsPoint: number = team.GroupSportsPoint || 0;
+    let IndividualSportsPoint: number = team.IndividualSportsPoint || 0;
 
     // checking if the programme is arts or sports
     if (programModel === Model.Arts) {
-      totalPoint = team.totalPoint + tPoint;
-      HousePoint = team.HousePoint + hPoint;
-      GroupPoint = team.GroupPoint + gPoint;
-      IndividualPoint = team.IndividualPoint + iPoint;
+      ttotalPoint = totalPoint + tPoint;
+      HousePoint = HousePoint + hPoint;
+      GroupPoint = GroupPoint + gPoint;
+      IndividualPoint = IndividualPoint + iPoint;
     } else if (programModel === Model.Sports) {
-      totalSportsPoint = team.totalSportsPoint + tPoint;
-      HouseSportsPoint = team.HouseSportsPoint + hPoint;
-      GroupSportsPoint = team.GroupSportsPoint + gPoint;
-      IndividualSportsPoint = team.IndividualSportsPoint + iPoint;
+      totalSportsPoint = totalSportsPoint + tPoint;
+      HouseSportsPoint = HouseSportsPoint + hPoint;
+      GroupSportsPoint = GroupSportsPoint + gPoint;
+      IndividualSportsPoint = IndividualSportsPoint + iPoint;
     }
     try {
       // saving the team
