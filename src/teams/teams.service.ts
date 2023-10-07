@@ -6,10 +6,15 @@ import { UpdateTeamInput } from './dto/update-team.input';
 import { Team } from './entities/team.entity';
 import { fieldsIdChecker, fieldsValidator } from 'src/utils/util';
 import { Model } from 'src/programmes/entities/programme.entity';
+import { CandidateProgrammeService } from 'src/candidate-programme/candidate-programme.service';
+import { CategoryService } from 'src/category/category.service';
 
 @Injectable()
 export class TeamsService {
-  constructor(@InjectRepository(Team) private teamRepository: Repository<Team>) {}
+  constructor(
+    @InjectRepository(Team) private teamRepository: Repository<Team>,
+    
+  ) {}
 
   create(createTeamInput: CreateTeamInput) {
     try {
@@ -207,6 +212,23 @@ export class TeamsService {
     }
   }
 
+  // get category based team leader board
+
+  async getCategoryBasedToppers() {
+    // to do that check all candidate programmes of this category and team and add all of them to team point which initialized variable here
+
+    // get all teams
+    const teams = await this.teamRepository.find();
+
+    // get all candidate programmes
+    const candidateProgrammes = await this.teamRepository.find();
+
+    // get all categories
+    const categories = await this.teamRepository.find();
+
+
+  }
+
   async setLastResult(id: number, lastResult: number) {
     const team = await this.teamRepository.findOneBy({ id });
 
@@ -254,7 +276,7 @@ export class TeamsService {
 
     // checking if the programme is arts or sports
     if (programModel === Model.Arts) {
-      ttotalPoint = totalPoint + tPoint;
+      totalPoint = totalPoint + tPoint;
       HousePoint = HousePoint + hPoint;
       GroupPoint = GroupPoint + gPoint;
       IndividualPoint = IndividualPoint + iPoint;

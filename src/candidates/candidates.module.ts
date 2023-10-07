@@ -9,6 +9,7 @@ import { SectionsModule } from 'src/sections/sections.module';
 import { CandidatesController } from './candidates.controller';
 import { CredentialsModule } from 'src/credentials/credentials.module';
 import { CandidateProgrammeModule } from 'src/candidate-programme/candidate-programme.module';
+import { CategorySettingsModule } from 'src/category-settings/category-settings.module';
 // import { GoogleDriveService } from './upload.service';
 
 @Module({
@@ -18,6 +19,7 @@ import { CandidateProgrammeModule } from 'src/candidate-programme/candidate-prog
     CategoryModule,
     SectionsModule,
     CredentialsModule,
+    CategorySettingsModule ,
     forwardRef(() => CandidateProgrammeModule),
   ],
   providers: [CandidatesResolver, CandidatesService],

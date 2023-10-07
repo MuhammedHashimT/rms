@@ -20,6 +20,8 @@ import { join } from 'path';
 import { Readable } from 'stream';
 import { driveConfig } from 'src/utils/googleApi.auth';
 import { Model } from 'src/programmes/entities/programme.entity';
+import { CategorySettings } from 'src/category-settings/entities/category-setting.entity';
+import { CategorySettingsService } from 'src/category-settings/category-settings.service';
 // import { drive } from 'src/utils/googleApi.auth';
 
 @Injectable()
@@ -31,7 +33,8 @@ export class CandidatesService {
     private sectionService: SectionsService,
     private candidateProgrammeService: CandidateProgrammeService,
     private credentialService: CredentialsService,
-  ) {}
+    private categorySettingsService: CategorySettingsService,
+  ) { }
 
   //  To create many candidates at a time , Normally using on Excel file upload
 
@@ -262,9 +265,9 @@ export class CandidatesService {
     }
   }
 
- async findByCategories(categories: string[] , fields: string[]) {
+  async findByCategories(categories: string[], fields: string[]) {
     const allowedRelations = ['category', 'team'];
-    
+
     // validating fields
     fields = fieldsValidator(fields, allowedRelations);
     // checking if fields contains id
@@ -277,68 +280,68 @@ export class CandidatesService {
         .where('category.name IN (:...categories)', { categories })
         .leftJoinAndSelect('candidate.team', 'team');
 
-        queryBuilder.select(
-          fields.map(column => {
-            const splitted = column.split('.');
-  
-            if (splitted.length > 1) {
-              return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
-            } else {
-              return `candidate.${column}`;
-            }
-          }),
-        );
-        const candidate = await queryBuilder.getMany();
-        return candidate;
-      } catch (e) {
-        throw new HttpException(
-          'An Error have when finding candidate ',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-          { cause: e },
-        );
-      }
+      queryBuilder.select(
+        fields.map(column => {
+          const splitted = column.split('.');
+
+          if (splitted.length > 1) {
+            return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
+          } else {
+            return `candidate.${column}`;
+          }
+        }),
+      );
+      const candidate = await queryBuilder.getMany();
+      return candidate;
+    } catch (e) {
+      throw new HttpException(
+        'An Error have when finding candidate ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: e },
+      );
+    }
   }
 
   // find candidates by category name and team name
 
-  async findByCategoryNamesAndTeamName(categories: string[], teamName: string , fields: string[]) {
-    
+  async findByCategoryNamesAndTeamName(categories: string[], teamName: string, fields: string[]) {
+
     const allowedRelations = ['category', 'team'];
-    
+
     // validating fields
     fields = fieldsValidator(fields, allowedRelations);
     // checking if fields contains id
     fields = fieldsIdChecker(fields);
-    try{
-    const queryBuilder = this.candidateRepository
-    .createQueryBuilder('candidate')
-    .where('candidate.category.name IN (:...categories)', { categories })
-    .andWhere('candidate.team.name = :teamName', { teamName })
-    .leftJoinAndSelect('candidate.category', 'category')
-    .leftJoinAndSelect('candidate.team', 'team')
+    try {
+      const queryBuilder = this.candidateRepository
+        .createQueryBuilder('candidate')
+        .where('candidate.category.name IN (:...categories)', { categories })
+        .andWhere('candidate.team.name = :teamName', { teamName })
+        .leftJoinAndSelect('candidate.category', 'category')
+        .leftJoinAndSelect('candidate.team', 'team')
 
-    queryBuilder.select(
-      fields.map(column => {
-        const splitted = column.split('.');
+      queryBuilder.select(
+        fields.map(column => {
+          const splitted = column.split('.');
 
-        if (splitted.length > 1) {
-          return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
-        } else {
-          return `candidate.${column}`;
-        }
-      }),
-    );
-    const candidate = await queryBuilder.getMany();
-    return candidate;
-  } catch (e) {
-    throw new HttpException(
-      'An Error have when finding candidate ',
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      { cause: e },
-    );
+          if (splitted.length > 1) {
+            return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
+          } else {
+            return `candidate.${column}`;
+          }
+        }),
+      );
+      const candidate = await queryBuilder.getMany();
+      return candidate;
+    } catch (e) {
+      throw new HttpException(
+        'An Error have when finding candidate ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: e },
+      );
+    }
   }
-}
-  
+
 
   async findOne(id: number, fields: string[]) {
     const allowedRelations = [
@@ -491,6 +494,127 @@ export class CandidatesService {
     return candidateProgramme;
   }
 
+
+  async findOverallToppers(fields: string[]) {
+    const allowedRelations = [
+      'category',
+      'team',
+      'candidateProgrammes',
+      'candidateProgrammes.programme',
+
+    ];
+
+    // validating fields
+    fields = fieldsValidator(fields, allowedRelations);
+    // checking if fields contains id
+    fields = fieldsIdChecker(fields);
+
+    try {
+      const queryBuilder = this.candidateRepository
+        .createQueryBuilder('candidate')
+        .leftJoinAndSelect('candidate.category', 'category')
+        .leftJoinAndSelect('candidate.team', 'team')
+        .leftJoinAndSelect('candidate.candidateProgrammes', 'candidateProgrammes')
+        .leftJoinAndSelect('candidateProgrammes.programme', 'programme')
+        .orderBy('candidate.individualPoint', 'ASC')
+
+      queryBuilder.select(
+        fields.map(column => {
+          const splitted = column.split('.');
+
+          if (splitted.length > 1) {
+            return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
+          } else {
+            return `candidate.${column}`;
+          }
+        }),
+      );
+      const candidates: Candidate[] = await queryBuilder.getMany()
+
+
+      // sort the candidates by individual point
+      const candidatePromises = candidates.map(async (candidate: Candidate) => {
+        const total: CategorySettings = await this.categorySettingsService.findOne(candidate.category.id, ['id', 'maxSingle']);
+        console.log(total);
+
+        return { candidate, total };
+      });
+
+      Promise.all(candidatePromises)
+        .then((candidateTotals) => {
+          // Sort the candidates based on the totals
+          const sortedCandidates = candidateTotals.sort((a, b) => {
+            const aMax = a.total.maxSingle * 8;
+            const bMax = b.total.maxSingle * 8;
+            const aTotal = a.candidate.individualPoint ? a.candidate.individualPoint : 0 / aMax * 100;
+            const bTotal = b.candidate.individualPoint ? b.candidate.individualPoint : 0 / bMax * 100;
+
+            if (a.candidate.category.name == 'THANAWIYYA' || 'ALIYA') {
+              return bTotal - aTotal;
+            }
+            return bTotal - aTotal;
+          });
+
+          // Now you have sortedCandidates as an array of objects with candidate and total properties
+          console.log(sortedCandidates);
+        })
+        .catch((error) => {
+          // Handle any errors that occurred during data retrieval or sorting
+          console.error(error);
+        });
+
+
+
+
+      return candidates;
+    } catch (e) {
+      throw new HttpException(
+        'An Error have when finding candidate ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: e },
+      );
+    }
+  }
+
+  // category based toppers
+
+  async getCategoryBasedToppers(){
+    // get candidates by category and sort by individual point , only get the top 5 candidates
+
+    const categories = await this.categoryService.findAll(['name']);
+
+    // usign quuery builder 
+    const queryBuilder = this.candidateRepository.createQueryBuilder('candidate')
+    .leftJoinAndSelect('candidate.team', 'team')
+    .leftJoinAndSelect('candidate.category', 'category');
+
+
+    // selecting the fields
+
+    queryBuilder.select(['candidate.name', 'candidate.individualPoint', 'candidate.category' , 'candidate.chestNO' , 'candidate.id' , 'team.name' , 'team.id' , 'category.name' , 'category.id']);
+
+    // looping the categories
+
+    for (let index = 0; index < categories.length; index++) {
+      const category = categories[index];
+
+      // get the candidates by category
+
+      const candidates = await queryBuilder
+        .where('candidate.category = :category', { category: category.id })
+        .orderBy('candidate.individualPoint', 'DESC')
+        .limit(5)
+        .getMany();
+
+      // add the candidates to category
+      category.candidates = candidates;
+    }
+    
+    return categories;
+
+  }
+
+
   // Update data
 
   async update(id: number, updateCandidateInput: UpdateCandidateInput, user: Credential) {
@@ -600,17 +724,17 @@ export class CandidatesService {
       throw new HttpException(`Cant find a candidate to add point`, HttpStatus.BAD_REQUEST);
     }
 
-    let individualPoint = 0;
-    let groupGeneralPoint = 0;
-    let groupSportsPoint = 0;
-    let individualSportsPoint = 0;
+    let individualPoint = candidate.individualPoint || 0;
+    let groupGeneralPoint = candidate.groupPoint || 0;
+    let groupSportsPoint = candidate.individualSportsPoint || 0;
+    let individualSportsPoint = candidate.groupSportsPoint || 0;
 
     if (model === Model.Arts) {
-      individualPoint = candidate.individualPoint + indPoint;
-      groupGeneralPoint = candidate.groupPoint + groupPoint;
+      individualPoint = individualPoint + indPoint;
+      groupGeneralPoint = groupGeneralPoint + groupPoint;
     } else if (model === Model.Sports) {
-      individualSportsPoint = candidate.individualSportsPoint + indPoint;
-      groupSportsPoint = candidate.groupSportsPoint + groupPoint;
+      individualSportsPoint = individualSportsPoint + indPoint;
+      groupSportsPoint = groupSportsPoint + groupPoint;
     }
 
     try {
@@ -632,17 +756,16 @@ export class CandidatesService {
 
   // image upload to google drive and save id to candidate
 
+  async uploadFiles(files: Express.Multer.File[]) {
 
-async uploadFiles(files: Express.Multer.File[]) {
-    
-  for (let index = 0; index < files.length; index++) {
-    const file = files[index];
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index];
 
-    const chestNo = file.originalname.split('.')[0]
+      const chestNo = file.originalname.split('.')[0]
 
-    
 
-    await this.uploadFile(chestNo , file.buffer, file.originalname, file.mimetype);
+
+      await this.uploadFile(chestNo, file.buffer, file.originalname, file.mimetype);
 
 
       await this.uploadFile(chestNo, file.buffer, file.originalname, file.mimetype);
@@ -651,9 +774,9 @@ async uploadFiles(files: Express.Multer.File[]) {
     return 'done';
   }
 
-  async uploadFile(  chestNo: string , filePath: Buffer, fileName: string, mimeType: string) {
+  async uploadFile(chestNo: string, filePath: Buffer, fileName: string, mimeType: string) {
 
-    const candidate = await this.candidateChecker(chestNo,mimeType)
+    const candidate = await this.candidateChecker(chestNo, mimeType)
 
     // check the file is image
     const buffer = Buffer.from(filePath);

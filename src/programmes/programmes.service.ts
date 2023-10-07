@@ -12,7 +12,6 @@ import { DetailsService } from 'src/details/details.service';
 import { Category } from 'src/category/entities/category.entity';
 import { Skill } from 'src/skill/entities/skill.entity';
 import { CredentialsService } from '../credentials/credentials.service';
-import { ScheduleCreate } from './dto/scheduleCreate.dto';
 import { createInput } from './dto/create-inputs.inputs';
 import { fieldsIdChecker, fieldsValidator, isDateValid } from 'src/utils/util';
 
@@ -687,13 +686,16 @@ export class ProgrammesService {
   }
 
   async remove(id: number, user: Credential) {
-    const programme = await this.findOne(id, ['id']);
+    const programme = await this.findOne(id, ['id','category' , 'category.name']);
 
     if (!programme) {
       throw new HttpException(`Cant find a programme to delete`, HttpStatus.BAD_REQUEST);
     }
 
     // authenticating the user have permission to remove the category
+
+    console.log(programme);
+    
 
     this.CredentialService.checkPermissionOnCategories(user, programme.category.name);
 

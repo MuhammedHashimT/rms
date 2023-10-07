@@ -8,7 +8,7 @@ import { fieldsIdChecker, fieldsValidator } from 'src/utils/util';
 
 @Injectable()
 export class GradesService {
-  constructor(@InjectRepository(Grade) private gradeRepository: Repository<Grade>) {}
+  constructor(@InjectRepository(Grade) private gradeRepository: Repository<Grade>) { }
 
   create(createGradeInput: CreateGradeInput) {
     try {
@@ -23,7 +23,7 @@ export class GradesService {
     }
   }
 
- async findAll( fields: string[]) {
+  async findAll(fields: string[]) {
     const allowedRelations = [
       'candidateProgramme',
       'candidateProgramme.candidate',
@@ -64,7 +64,7 @@ export class GradesService {
     }
   }
 
-  async findOne(id: number , fields: string[]) {
+  async findOne(id: number, fields: string[]) {
     const allowedRelations = [
       'candidateProgramme',
       'candidateProgramme.candidate',
@@ -106,6 +106,49 @@ export class GradesService {
     }
   }
 
+
+  async findOneByName(name: string, fields: string[]) {
+    const allowedRelations = [
+      'candidateProgramme',
+      'candidateProgramme.candidate',
+      'candidateProgramme.programme',
+    ];
+
+    // validating fields
+    fields = fieldsValidator(fields, allowedRelations);
+    // checking if fields contains id
+    fields = fieldsIdChecker(fields);
+
+    try {
+      const queryBuilder = this.gradeRepository
+        .createQueryBuilder('grade')
+        .where('grade.name = :name', { name })
+        .leftJoinAndSelect('grade.candidateProgramme', 'candidateProgramme')
+        .leftJoinAndSelect('candidateProgramme.candidate', 'candidate')
+        .leftJoinAndSelect('candidateProgramme.programme', 'programme');
+
+      queryBuilder.select(
+        fields.map(column => {
+          const splitted = column.split('.');
+
+          if (splitted.length > 1) {
+            return `${splitted[splitted.length - 2]}.${splitted[splitted.length - 1]}`;
+          } else {
+            return `grade.${column}`;
+          }
+        }),
+      );
+      const grade = await queryBuilder.getOne();
+      return grade;
+    } catch (e) {
+      throw new HttpException(
+        'An Error have when finding grade ',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        { cause: e },
+      );
+    }
+  }
+
   async update(id: number, updateGradeInput: UpdateGradeInput) {
     // checking is grade exist
     const grade = await this.gradeRepository.findOneBy({ id });
@@ -115,7 +158,7 @@ export class GradesService {
     }
     // trying to return data
 
-    Object.assign(grade,updateGradeInput)
+    Object.assign(grade, updateGradeInput)
 
     try {
       this.gradeRepository.save(grade)

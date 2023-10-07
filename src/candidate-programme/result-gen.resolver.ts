@@ -8,6 +8,7 @@ import { Programme } from 'src/programmes/entities/programme.entity';
 import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { UseGuards } from '@nestjs/common';
+import { AddManual } from './dto/add-manual.dto';
 
 @Resolver(() => CandidateProgramme)
 export class ResultGenResolver {
@@ -47,7 +48,7 @@ export class ResultGenResolver {
     return this.resultGenService.liveResult(programmeCode, timeInSec);
   }
 
-  @Mutation(()=> String)
+  @Mutation(()=> [Programme])
   @HasRoles(Roles.Controller)
   @UseGuards(RolesGuard)
   async publishResults(
@@ -65,5 +66,15 @@ export class ResultGenResolver {
     return this.resultGenService.publishResult(programmeCode);
   }
 
+  // upload result manually
+  @Mutation(() => Programme , { name: 'uploadResultManually' })
+  @HasRoles(Roles.Controller)
+  @UseGuards(RolesGuard)
+ async uploadResultanually(
+    @Args('programmeCode') programmeCode: string,
+    @Args('addManual' ,  { type: () => [AddManual] }  ) addManual: [AddManual] ,
+  ) {
+    return this.resultGenService.uploadResultManually(programmeCode, addManual);
+  }
 
 }

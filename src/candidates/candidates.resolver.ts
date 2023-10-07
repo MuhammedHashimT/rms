@@ -9,6 +9,7 @@ import { Roles } from 'src/credentials/roles/roles.enum';
 import { CreateInput } from './dto/create-input.dto';
 import { fieldsProjection } from 'graphql-fields-list';
 import { CredentialsService } from 'src/credentials/credentials.service';
+import { Category } from 'src/category/entities/category.entity';
 
 @Resolver(() => Candidate)
 export class CandidatesResolver {
@@ -75,6 +76,12 @@ export class CandidatesResolver {
     return this.candidatesService.findByCategoryNamesAndTeamName(categoriesName, teamName, fields);
   }
 
+  @Query(() => [Category], { name: 'getCategoryBasedToppers' })
+  getCategoryBasedToppers(){
+    return this.candidatesService.getCategoryBasedToppers();
+  }
+
+
   @Query(() => Candidate, { name: 'candidate' })
   async findOne(@Args('id', { type: () => Int }) id: number, @Args('api_key') api_key: string, @Info() info: any) {
     await this.credentialsService.ValidateApiKey(api_key);
@@ -86,7 +93,7 @@ export class CandidatesResolver {
   async findOverallToppers(@Args('api_key') api_key: string, @Info() info: any) {
     await this.credentialsService.ValidateApiKey(api_key);
     const fields = Object.keys(fieldsProjection(info));
-    return this.candidatesService.findOverallToppers(fields);
+    // return this.candidatesService.findOverallToppers(fields);
   }
 
 

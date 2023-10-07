@@ -240,9 +240,6 @@ export class CategoryService {
 
   }
 
-
-
-
   async update(id: number, updateCategoryInput: UpdateCategoryInput) {
 
     const category = await this.findOne(id , ['id'])
