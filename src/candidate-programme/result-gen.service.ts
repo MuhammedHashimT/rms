@@ -687,6 +687,8 @@ export class ResultGenService {
         clearInterval(intervalId);
       }
     }, timeInSec * 3000);
+
+    return "Results are live now"
   }
 
   // upload result mannualy by controller

@@ -57,7 +57,7 @@ export class ResultGenResolver {
     return this.resultGenService.publishResults(programmeCode);
   }
 
-  @Mutation(() => Programme )
+  @Mutation(() => String )
   @HasRoles(Roles.Controller)
   @UseGuards(RolesGuard)
   async publishResult(
