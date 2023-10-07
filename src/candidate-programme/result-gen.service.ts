@@ -688,7 +688,7 @@ export class ResultGenService {
       }
     }, timeInSec * 3000);
 
-    return "Results are live now"
+    return 0
   }
 
   // upload result mannualy by controller

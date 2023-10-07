@@ -9,6 +9,7 @@ import { HasRoles, RolesGuard } from 'src/credentials/roles/roles.guard';
 import { Roles } from 'src/credentials/roles/roles.enum';
 import { UseGuards } from '@nestjs/common';
 import { AddManual } from './dto/add-manual.dto';
+import { Any } from 'typeorm';
 
 @Resolver(() => CandidateProgramme)
 export class ResultGenResolver {
@@ -57,7 +58,7 @@ export class ResultGenResolver {
     return this.resultGenService.publishResults(programmeCode);
   }
 
-  @Mutation(() => String )
+  @Mutation(()=> Int)
   @HasRoles(Roles.Controller)
   @UseGuards(RolesGuard)
   async publishResult(
