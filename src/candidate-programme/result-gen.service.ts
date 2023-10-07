@@ -795,7 +795,7 @@ export class ResultGenService {
       }
 
 
-      candidateProgramme.mark = mark;
+      candidateProgramme.point = mark;
 
       // save the candidate programme
 
