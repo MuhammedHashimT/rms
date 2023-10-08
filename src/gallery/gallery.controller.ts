@@ -9,16 +9,17 @@ import {
   UseInterceptors,
   UploadedFile,
   HttpException,
+  UploadedFiles,
 } from '@nestjs/common';
 import { GalleryService } from './gallery.service';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
 import { UpdateGalleryDto } from './dto/update-gallery.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { isArray } from 'class-validator';
 
 @Controller('gallery')
 export class GalleryController {
-  constructor(private readonly galleryService: GalleryService) {}
+  constructor(private readonly galleryService: GalleryService) { }
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
@@ -29,13 +30,12 @@ export class GalleryController {
     return this.galleryService.create(createGalleryDto, file);
   }
 
+
   @Post('many')
-  @UseInterceptors(FileInterceptor('files'))
-  createMany(
-    @Body() createGalleryDto: CreateGalleryDto[],
-    @UploadedFile('files') files: Express.Multer.File[],
-  ) {
-    return this.galleryService.createMany(createGalleryDto, files);
+  @UseInterceptors(FilesInterceptor('files',null))
+  async uploadMultipleFiles(@UploadedFiles() files: Express.Multer.File[] ) {
+    
+    return this.galleryService.createMany(files);
   }
 
   @Get()
@@ -60,7 +60,7 @@ export class GalleryController {
   ) {
     const _id = +id;
     if (!isNaN(_id)) {
-    return this.galleryService.update(+id, updateGalleryDto, file);
+      return this.galleryService.update(+id, updateGalleryDto, file);
     } else throw new HttpException('id must be a number', 400);
   }
 

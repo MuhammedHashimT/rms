@@ -21,29 +21,16 @@ export class GalleryService {
   async create(createGalleryDto: CreateGalleryDto, file: Express.Multer.File) {
 
     // check the each tag is exist
-    const tags = await Promise.all(createGalleryDto.tag.map(async (tag) => {
-      const _tag = await this.tagService.findByName(tag);
-      if (_tag) {
-        return _tag;
-      }
-      else {
-        throw new HttpException(`tag ${tag} is not exist`, HttpStatus.BAD_REQUEST);
-      }
-    }))
 
     const gallery = this.galleryRepository.create(createGalleryDto);
     const imageId = await this.uploadFile(file.buffer, file.originalname, file.mimetype);
     gallery.imageId = imageId;
 
-    console.log(tags);
 
 
     try {
       const Gallery = await this.galleryRepository.save(gallery);
-      tags.forEach(async (tag) => {
-        await tag.galleries.push(Gallery);
-        await this.tagService.addGallery(tag.id, Gallery.id);
-      })
+
       return Gallery;
     }
     catch (error) {
@@ -51,7 +38,7 @@ export class GalleryService {
     }
   }
 
-  async createMany(createGalleryDto: CreateGalleryDto[], files: Express.Multer.File[]) {
+  async createMany( files: Express.Multer.File[]) {
     // upload files 
     const imageIds = await Promise.all(files.map(async (file) => {
       const imageId = await this.uploadFile(file.buffer, file.originalname, file.mimetype);
@@ -59,9 +46,11 @@ export class GalleryService {
     }))
 
     // after upload files, create gallery
-    const galleries = createGalleryDto.map((gallery, index) => {
-      gallery.name = imageIds[index];
-      return this.galleryRepository.create(gallery);
+    const galleries = files.map((gallery, index) => {
+      return this.galleryRepository.create({
+        name: gallery.originalname,
+        imageId: imageIds[index],
+      });
     })
 
     try {
