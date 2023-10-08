@@ -16,17 +16,17 @@ export class GalleryService {
     private galleryRepository: Repository<Gallery>,
     @Inject(forwardRef(() => TagService))
     private readonly tagService: TagService,
-  ) {}
+  ) { }
 
- async create(createGalleryDto: CreateGalleryDto , file: Express.Multer.File) {
+  async create(createGalleryDto: CreateGalleryDto, file: Express.Multer.File) {
 
     // check the each tag is exist
     const tags = await Promise.all(createGalleryDto.tag.map(async (tag) => {
       const _tag = await this.tagService.findByName(tag);
-      if(_tag){
+      if (_tag) {
         return _tag;
       }
-      else{
+      else {
         throw new HttpException(`tag ${tag} is not exist`, HttpStatus.BAD_REQUEST);
       }
     }))
@@ -36,104 +36,108 @@ export class GalleryService {
     gallery.imageId = imageId;
 
     console.log(tags);
-    
 
-    try{
+
+    try {
       const Gallery = await this.galleryRepository.save(gallery);
-      tags.forEach(async(tag) => {
+      tags.forEach(async (tag) => {
         await tag.galleries.push(Gallery);
         await this.tagService.addGallery(tag.id, Gallery.id);
       })
       return Gallery;
     }
-    catch(error){
+    catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
   async createMany(createGalleryDto: CreateGalleryDto[], files: Express.Multer.File[]) {
-    const gallery = this.galleryRepository.create(createGalleryDto);
-    const imageId : string[] = await Promise.all(files.map(async (file) => {
-      return await this.uploadFile(file.buffer, file.originalname, file.mimetype)
+    // upload files 
+    const imageIds = await Promise.all(files.map(async (file) => {
+      const imageId = await this.uploadFile(file.buffer, file.originalname, file.mimetype);
+      return imageId;
     }))
-    gallery.forEach((item, index) => {
-      item.imageId = imageId[index];
+
+    // after upload files, create gallery
+    const galleries = createGalleryDto.map((gallery, index) => {
+      gallery.name = imageIds[index];
+      return this.galleryRepository.create(gallery);
     })
 
-    try{
-      return await this.galleryRepository.save(gallery);
+    try {
+      return await this.galleryRepository.save(galleries);
     }
-    catch(error){
+    catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
 
   async findAll() {
-    try{
-      const gallery : Gallery[] = await this.galleryRepository.find();
+    try {
+      const gallery: Gallery[] = await this.galleryRepository.find();
 
       return gallery;
     }
-    catch(error){
+    catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
   findOne(id: number) {
-    try{
+    try {
       return this.galleryRepository.findOne({
         where: { id },
       });
     }
-    catch(error){
+    catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
- async update(id: number, updateGalleryDto: UpdateGalleryDto , file: Express.Multer.File) {
+  async update(id: number, updateGalleryDto: UpdateGalleryDto, file: Express.Multer.File) {
     const gallery = await this.findOne(id)
-    const imageId : string = await this.uploadFile(file.buffer, file.originalname, file.mimetype)
+    const imageId: string = await this.uploadFile(file.buffer, file.originalname, file.mimetype)
 
     const tags = await Promise.all(updateGalleryDto.tag.map(async (tag) => {
       const _tag = await this.tagService.findByName(tag);
-      if(_tag){
+      if (_tag) {
         return _tag;
       }
-      else{
+      else {
         throw new HttpException(`tag ${tag} is not exist`, HttpStatus.BAD_REQUEST);
       }
     }))
-    
-    try{
+
+    try {
       gallery.name = updateGalleryDto.name;
       const Gallery = await this.galleryRepository.save({
         ...gallery,
         imageId,
       });
 
-      tags.forEach(async(tag) => {
+      tags.forEach(async (tag) => {
         await tag.galleries.push(Gallery);
         await this.tagService.addGallery(tag.id, Gallery.id);
       })
 
       return Gallery;
     }
-    catch(error){
+    catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
   remove(id: number) {
-    try{
+    try {
       return this.galleryRepository.delete(id);
     }
-    catch(error){
+    catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
 
-  async uploadFile(  filePath: Buffer, fileName: string, mimeType: string) {
+  async uploadFile(filePath: Buffer, fileName: string, mimeType: string) {
 
     // check the file is image
     if (!mimeType.includes('image')) {
@@ -152,7 +156,7 @@ export class GalleryService {
     });
 
     // Get the file extension.
-  const fileExtension = fileName.split('.')[1];
+    const fileExtension = fileName.split('.')[1];
 
     // get the folder id
     const folderId = process.env.DRIVE_GALLERY_FOLDER_ID;

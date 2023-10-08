@@ -768,7 +768,7 @@ export class CandidatesService {
       await this.uploadFile(chestNo, file.buffer, file.originalname, file.mimetype);
 
 
-      await this.uploadFile(chestNo, file.buffer, file.originalname, file.mimetype);
+      // await this.uploadFile(chestNo, file.buffer, file.originalname, file.mimetype);
     }
 
     return 'done';
