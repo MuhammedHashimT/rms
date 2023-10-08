@@ -4,10 +4,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 const cookieParser = require('cookie-parser')
 import * as bodyParser from 'body-parser';
-
+import { json } from 'body-parser';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
 
   // adding global validation pipe
   app.useGlobalPipes(new ValidationPipe({transform :  true}))
@@ -18,8 +19,7 @@ async function bootstrap() {
   // setting cookie parser
   app.use(cookieParser());
 
-  app.use(bodyParser.json({limit: '50mb'}));
-  app.use(bodyParser.urlencoded({limit: '50mb', extended: true}))
+  app.use(json({ limit: '100mb' }));
 
   // cors origin
   app.enableCors({
@@ -32,7 +32,6 @@ async function bootstrap() {
   //   origin: '*',
   //   credentials: true,
   // });
-
 
   await app.listen(configService.get('PORT') || 4000);
 }
