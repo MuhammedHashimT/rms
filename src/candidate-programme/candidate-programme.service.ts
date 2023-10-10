@@ -24,7 +24,7 @@ import { CustomSetting } from 'src/custom-settings/entities/custom-setting.entit
 
 @Injectable()
 export class CandidateProgrammeService {
-  
+
   constructor(
     @InjectRepository(CandidateProgramme)
     private candidateProgrammeRepository: Repository<CandidateProgramme>,
@@ -36,7 +36,7 @@ export class CandidateProgrammeService {
     private readonly categorySettingsService: CategorySettingsService,
     private readonly credentialService: CredentialsService,
     private readonly customSettingsService: CustomSettingsService,
-  ) {}
+  ) { }
 
   // to get same team candidates
   teamCandidates(candidateProgrammes: CandidateProgramme[], team: Team) {
@@ -45,7 +45,7 @@ export class CandidateProgrammeService {
     });
   }
 
-   hasDuplicateValues = (arr) => {
+  hasDuplicateValues = (arr) => {
     return new Set(arr).size !== arr.length;
   };
 
@@ -254,7 +254,7 @@ export class CandidateProgrammeService {
           continue;
         }
 
-        
+
         const hasDuplicateValues = this.hasDuplicateValues(candidatesOfGroup)
 
         if (hasDuplicateValues) {
@@ -523,7 +523,7 @@ export class CandidateProgrammeService {
     // checking eligibility on single and group
     if (programme.type !== Type.SINGLE) {
 
-        const hasDuplicateValues = this.hasDuplicateValues(updateCandidateProgrammeInput.candidatesOfGroup)
+      const hasDuplicateValues = this.hasDuplicateValues(updateCandidateProgrammeInput.candidatesOfGroup)
 
       if (hasDuplicateValues) {
         throw new HttpException(`Duplicate chestNo detected`, HttpStatus.BAD_REQUEST);
@@ -798,7 +798,7 @@ export class CandidateProgrammeService {
       if (settings.maxSingle && programme.type == Type.SINGLE) {
         const SinglePrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
           (e: CandidateProgramme) => {
-            return e.programme.type == Type.SINGLE;
+            return e.programme.type == Type.SINGLE && e.programme.model !== Model.Sports;
           },
         );
         if (SinglePrograms.length >= settings.maxSingle) {
@@ -814,7 +814,7 @@ export class CandidateProgrammeService {
       if (settings.maxGroup && programme.type == Type.GROUP) {
         const groupPrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
           (e: CandidateProgramme) => {
-            return e.programme.type == Type.GROUP;
+            return e.programme.type == Type.GROUP && e.programme.model !== Model.Sports;
           },
         );
         if (groupPrograms.length >= settings.maxGroup) {
@@ -830,7 +830,7 @@ export class CandidateProgrammeService {
       if (settings.maxStage && programme.mode == Mode.STAGE && programme.type == Type.SINGLE) {
         const stagePrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
           (e: CandidateProgramme) => {
-            return e.programme.mode == Mode.STAGE && e.programme.type == Type.SINGLE;
+            return e.programme.mode == Mode.STAGE && e.programme.type == Type.SINGLE && e.programme.model !== Model.Sports;
           },
         );
         if (stagePrograms.length >= settings.maxStage) {
@@ -850,7 +850,7 @@ export class CandidateProgrammeService {
       ) {
         const nonStagePrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
           (e: CandidateProgramme) => {
-            return e.programme.mode == Mode.NON_STAGE && e.programme.type == Type.SINGLE;
+            return e.programme.mode == Mode.NON_STAGE && e.programme.type == Type.SINGLE && e.programme.model !== Model.Sports;
           },
         );
         if (nonStagePrograms.length >= settings.maxNonStage) {
@@ -870,7 +870,7 @@ export class CandidateProgrammeService {
       ) {
         const outDoorPrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
           (e: CandidateProgramme) => {
-            return e.programme.mode == Mode.OUTDOOR_STAGE && e.programme.type == Type.SINGLE;
+            return e.programme.mode == Mode.OUTDOOR_STAGE && e.programme.type == Type.SINGLE && e.programme.model !== Model.Sports;;
           },
         );
         if (outDoorPrograms.length >= settings.maxOutDoor) {
@@ -883,7 +883,11 @@ export class CandidateProgrammeService {
     } else if (programme.type !== Type.HOUSE && programme.model == Model.Sports) {
       // maximum sports programme
       if (settings.maxSports && (programme.type == Type.SINGLE || programme.type == Type.GROUP)) {
-        const programmes: CandidateProgramme[] = candidate.candidateProgrammes;
+        const programmes: CandidateProgramme[] = candidate.candidateProgrammes.filter(
+          (e: CandidateProgramme) => {
+            return e.programme.model == Model.Sports;
+          },
+        );
 
         if (programmes.length >= settings.maxSports) {
           throw new HttpException(
@@ -898,7 +902,7 @@ export class CandidateProgrammeService {
       if (settings.maxSportsSingle && programme.type == Type.SINGLE) {
         const SinglePrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
           (e: CandidateProgramme) => {
-            return e.programme.type == Type.SINGLE;
+            return e.programme.type == Type.SINGLE && e.programme.model == Model.Sports;
           },
         );
         if (SinglePrograms.length >= settings.maxSportsSingle) {
@@ -914,7 +918,7 @@ export class CandidateProgrammeService {
       if (settings.maxSportsGroup && programme.type == Type.GROUP) {
         const groupPrograms: CandidateProgramme[] = candidate.candidateProgrammes.filter(
           (e: CandidateProgramme) => {
-            return e.programme.type == Type.GROUP;
+            return e.programme.type == Type.GROUP && e.programme.model == Model.Sports;;
           },
         );
         if (groupPrograms.length >= settings.maxSportsGroup) {
@@ -1288,10 +1292,10 @@ export class CandidateProgrammeService {
     return candidatesOfGroups;
   }
 
-   async getCandidatesOfProgramme(programCode: string) {
+  async getCandidatesOfProgramme(programCode: string) {
     const programme: Programme = await this.programmeService.findOneByCode(programCode);
 
     return programme.candidateProgramme;
   }
-  
+
 }

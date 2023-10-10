@@ -665,6 +665,7 @@ export class ResultGenService {
         .get(ref)
         .then(snapshot => {
           if (snapshot.exists()) {
+            console.log(snapshot.val());
           } else {
             console.log('No data available');
           }
@@ -686,7 +687,7 @@ export class ResultGenService {
         firebasedb.update(firebasedb.ref(this.db), { '/current': 'no data' });
         clearInterval(intervalId);
       }
-    }, timeInSec * 3000);
+    }, timeInSec * 1000);
 
     return 0
   }
