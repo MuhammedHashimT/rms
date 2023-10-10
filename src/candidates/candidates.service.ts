@@ -591,9 +591,9 @@ export class CandidatesService {
 
     // selecting the fields
 
-    queryBuilder.select(['candidate.name', 'candidate.individualPoint', 'candidate.category' , 'candidate.chestNO' , 'candidate.id' , 'team.name' , 'team.id' , 'category.name' , 'category.id']);
+    queryBuilder.select(['candidate.name', 'candidate.individualPoint', 'candidate.category' , 'candidate.chestNO' , 'candidate.id' , 'candidate.imageId' , 'team.name' , 'team.id' , 'category.name' , 'category.id']);
 
-    // looping the categories
+    // looping the categories                                                                                                                                                                                  
 
     for (let index = 0; index < categories.length; index++) {
       const category = categories[index];
