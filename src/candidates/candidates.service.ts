@@ -347,7 +347,7 @@ export class CandidatesService {
   }
 
 
-  async findOne(id: number, fields: string[]) {
+ async findOne(id: number, fields: string[]) {
     const allowedRelations = [
       'category',
       'team',
@@ -369,8 +369,6 @@ export class CandidatesService {
         .leftJoinAndSelect('candidate.team', 'team')
         .leftJoinAndSelect('candidate.candidateProgrammes', 'candidateProgrammes')
         .leftJoinAndSelect('candidateProgrammes.programme', 'programme')
-        .leftJoinAndSelect('candidateProgrammes.position', 'position')
-        .leftJoinAndSelect('candidateProgrammes.grade', 'grade');
 
       queryBuilder.select(
         fields.map(column => {
@@ -384,6 +382,11 @@ export class CandidatesService {
         }),
       );
       const candidate = await queryBuilder.getOne();
+      
+      if (!candidate) {
+        throw new HttpException(`Cant find candidate with id ${id} `, HttpStatus.BAD_REQUEST); 
+      }
+      
       return candidate;
     } catch (e) {
       throw new HttpException(
@@ -394,13 +397,14 @@ export class CandidatesService {
     }
   }
 
-  async findOneByChestNo(chestNO: string) {
+  async findOneByChestNo(chestNO: string) { 
     try {
+
       const candidate = await this.candidateRepository.findOne({
         where: {
           chestNO,
         },
-        relations: ['category', 'team', 'candidateProgrammes' , 'cgp' , 'cgp.candidateProgramme'],
+        relations: ['category', 'team', 'candidateProgrammes' , 'cgp'],
       });
 
       if (!candidate) {
@@ -425,28 +429,30 @@ export class CandidatesService {
 
         if (!isAlready) {
 
-          const program = await this.programmeService.findOneByCode(cgp.programme.programCode);
+          // const program = await this.programmeService.findOneByCode(cgp.programme.programCode);
 
-          if(!program){
-            throw new HttpException(
-              `Cant find programme with code ${cgp.programme.programCode} `,
-              HttpStatus.BAD_REQUEST,
-            );
-          }
+          // if(!program){
+          //   throw new HttpException(
+          //     `Cant find programme with code ${cgp.programme.programCode} `,
+          //     HttpStatus.BAD_REQUEST,
+          //   );
+          // }
 
-          const candidateProgramme : CandidateProgramme  = program.candidateProgramme.find(candidateProgramme => candidateProgramme.candidatesOfGroup.some(candidateOfGroup => candidateOfGroup.id === candidate.id));
+          // const candidateProgramme : CandidateProgramme  = program.candidateProgramme.find(candidateProgramme => candidateProgramme.candidatesOfGroup.some(candidateOfGroup => candidateOfGroup.id === candidate.id));
 
-          if(!candidateProgramme){
-            throw new HttpException(
-              `Cant find candidate programme with candidate id ${candidate.id} `,
-              HttpStatus.BAD_REQUEST,
-            );
-          }
+          // if(!candidateProgramme){
+          //   throw new HttpException(
+          //     `Cant find candidate programme with candidate id ${candidate.id} `,
+          //     HttpStatus.BAD_REQUEST,
+          //   );
+          // }
 
-          candidateProgrammes.push({
-            ...candidateProgramme,
-            candidate: candidate,
-          });
+          // candidateProgrammes.push({
+          //   ...candidateProgramme,
+          //   candidate: candidate,
+          // });
+
+          candidateProgrammes.push(cgp);
         }
 
 
@@ -460,6 +466,8 @@ export class CandidatesService {
       throw new HttpException(e.message, HttpStatus.INTERNAL_SERVER_ERROR, { cause: e });
     }
   }
+
+  
   async findOneByChestNoWithoutError(chestNO: string) {
     try {
       const candidate = await this.candidateRepository.findOne({
