@@ -396,7 +396,7 @@ export class CandidatesService {
         where: {
           chestNO,
         },
-        relations: ['category', 'team', 'candidateProgrammes'],
+        relations: ['category', 'team', 'candidateProgrammes' , 'cgp' , 'cgp.candidateProgramme'],
       });
 
       if (!candidate) {
@@ -406,12 +406,34 @@ export class CandidatesService {
         );
       }
 
+      // change what in cgp to candidateProgrammes with what already in candidateProgrammes
+      const cgp = candidate.cgp || [];
+
+      const candidateProgrammes = candidate.candidateProgrammes || [];
+
+      // if cgp.programme is not already in candidateProgrammes.programme then push cgp to 
+      // candidateProgrammes  
+
+      cgp.forEach(cgp => {
+        const isAlready = candidateProgrammes.some(candidateProgramme => candidateProgramme.programme.id === cgp.programme.id);
+
+        // if not already exist then push to candidateProgrammes with the candidateProgramme of that cgp to get the position and grade and the candidate should be the candidate of that cgp
+
+        if (!isAlready) {
+          candidateProgrammes.push(cgp);
+        }
+
+
+
+      });
+
+      candidate.candidateProgrammes = candidateProgrammes;
+
       return candidate;
     } catch (e) {
       throw new HttpException(e.message, HttpStatus.INTERNAL_SERVER_ERROR, { cause: e });
     }
   }
-
   async findOneByChestNoWithoutError(chestNO: string) {
     try {
       const candidate = await this.candidateRepository.findOne({
