@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   Entity,
   JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -104,6 +105,10 @@ export class Candidate {
   @ManyToOne(() => Category, category => category.candidates, { eager: true, onDelete: 'SET NULL' })
   @Field(() => Category, { nullable: true })
   category: Category;
+
+  @ManyToMany(() => CandidateProgramme, candidateProgramme => candidateProgramme.candidatesOfGroup)
+  @Field(() => [CandidateProgramme], { nullable: true })
+  cgp: CandidateProgramme[];
 
   // Dates
 

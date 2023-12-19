@@ -10,6 +10,7 @@ import { CandidatesController } from './candidates.controller';
 import { CredentialsModule } from 'src/credentials/credentials.module';
 import { CandidateProgrammeModule } from 'src/candidate-programme/candidate-programme.module';
 import { CategorySettingsModule } from 'src/category-settings/category-settings.module';
+import { ProgrammesModule } from 'src/programmes/programmes.module';
 // import { GoogleDriveService } from './upload.service';
 
 @Module({
@@ -20,6 +21,7 @@ import { CategorySettingsModule } from 'src/category-settings/category-settings.
     SectionsModule,
     CredentialsModule,
     CategorySettingsModule ,
+    ProgrammesModule,
     forwardRef(() => CandidateProgrammeModule),
   ],
   providers: [CandidatesResolver, CandidatesService],
